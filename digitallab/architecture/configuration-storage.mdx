@@ -1,0 +1,78 @@
+---
+title: "配置与存储"
+description: "DigitalLab 的双层配置存储、config.json 键表以及 UI 偏好与首次运行迁移机制。"
+sidebarTitle: "配置与存储"
+---
+
+DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时维护一份独立的 UI 偏好文件。数据与日志的完整文件清单参见 /digitallab/privacy/data-storage。
+
+## 双层配置存储
+
+| 配置文件 | 位置 | 内容 |
+| --- | --- | --- |
+| `config.json` | 随软件分发，运行时复制到 `%APPDATA%\DigitalLab\` | 公开配置：端口、阈值、日志级别、开关 |
+| `user_config.json` | `%APPDATA%\DigitalLab\` | 敏感数据：API Key、Token、NAS 凭据 |
+
+`core/config.py` 定义了敏感字段集合 `_SENSITIVE_KEYS = {"auth_token", "ai", "nas_devices"}`。`Config.save()` 在写入时会自动过滤这些字段，将其单独保存到 `user_config.json`。
+
+### 首次运行迁移
+
+`Config.load()` 在 AppData 不存在 `user_config.json` 时，检查分发版 `config.json` 中是否仍包含敏感字段。若存在，则自动将其迁移到 `user_config.json`，实现旧版本平滑过渡。
+
+## config.json 配置键表
+
+以下为 `config.json` 中各配置键的默认值、类型、范围与说明，依据 `config.schema.json` 与 `core/config_validator.py`：
+
+| 键 | 默认值 | 类型 | 范围 | 说明 |
+| --- | --- | --- | --- | --- |
+| `log_level` | `"INFO"` | `string` | `DEBUG` / `INFO` / `WARN` / `ERROR` | 日志级别 |
+| `log_max_days` | `30` | `integer` | 1 - 365 | 日志保留天数 |
+| `log_format` | `"%(asctime)s ..."` | `string` | - | Python logging 格式字符串 |
+| `auto_organize_enabled` | `false` | `boolean` | - | 自动整理开关 |
+| `auto_organize_interval` | `3600` | `integer` | 1 - 86400 | 自动整理间隔（秒） |
+| `dashboard_port` | `8080` | `integer` | 1 - 65535 | Web Dashboard 端口 |
+| `dashboard_host` | `"127.0.0.1"` | `string` | - | Web Dashboard 监听地址 |
+| `monitor_threshold_cpu` | `80` | `integer` | 0 - 100 | CPU 告警阈值（%） |
+| `monitor_threshold_memory` | `85` | `integer` | 0 - 100 | 内存告警阈值（%） |
+| `monitor_threshold_disk` | `90` | `integer` | 0 - 100 | 磁盘告警阈值（%） |
+| `monitor_alert_cooldown` | `300` | `integer` | 1 - 86400 | 告警冷却时间（秒） |
+| `monitor_interval` | `60` | `integer` | 1 - 86400 | 守护采集间隔（秒） |
+
+以下键存在于 `config.json` 模板中，但 `config.schema.json` / `config_validator.py` 的 `_SCHEMA` 中**未定义**它们：
+
+| 键 | 默认值 | 说明 |
+| --- | --- | --- |
+| `hardware_acceleration` | `false` | 硬件加速开关，由 `main.js` 在启动时直接读取 |
+| `nas_mock_enabled` | `true` | NAS Mock 设备开关，控制是否生成模拟 NAS 数据 |
+
+<Note>
+  `hardware_acceleration` 与 `nas_mock_enabled` 是 `config.json` 中的实际键，但配置校验器未校验它们。这意味着：
+
+  - 它们的值不会被校验器修复或截断；
+  - 若值类型错误，可能影响对应功能的预期行为。
+</Note>
+
+## UI 偏好文件
+
+界面级偏好存储在 `%APPDATA%\digital-lab\config.json`（注意应用名使用 kebab-case `digital-lab`），由 `main.js` 直接读写，不经过 Python 后端。包含以下键：
+
+| 键 | 说明 |
+| --- | --- |
+| `theme` | `light` / `dark` |
+| `language` | `zh-CN` / `en-US` / `ja-JP` |
+| `splash_animation` | 开屏动画开关 |
+| `onboarding_done` | 首次启动引导是否已完成 |
+| `hardware_acceleration` | 硬件加速开关（下次启动生效） |
+
+`main.js` 在读取这些文件时自动去除 UTF-8 BOM，避免记事本等工具编辑后 JSON 解析失败。
+
+## 配置校验
+
+`core/config_validator.py` 在应用启动时运行：
+
+1. 读取 `config.json`。
+2. 对 `_SCHEMA` 中的每个字段进行类型转换、范围截断与枚举校验。
+3. 若发现缺失、类型错误或越界，自动填充默认值并写回文件，同时在日志中输出校验报告。
+4. 自动生成 `config.schema.json`，与校验规则保持同步。
+
+如需查看本机实际的数据、日志与配置文件清单，请参考 /digitallab/privacy/data-storage。

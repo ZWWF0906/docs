@@ -9,15 +9,6 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "pages": [
-      {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
-        ]
-      }
-    ],
     "global": {
       "anchors": [
         {
@@ -31,7 +22,79 @@
           "icon": "newspaper"
         }
       ]
-    }
+    },
+    "tabs": [
+      {
+        "tab": "ZWWF Labs",
+        "pages": [
+          "index"
+        ]
+      },
+      {
+        "tab": "DigitalLab",
+        "groups": [
+          {
+            "group": "快速开始",
+            "pages": [
+              "digitallab/getting-started/overview",
+              "digitallab/getting-started/features",
+              "digitallab/getting-started/system-requirements",
+              "digitallab/getting-started/installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "用户指南",
+            "pages": [
+              "digitallab/user-guide/dashboard",
+              "digitallab/user-guide/device-center",
+              "digitallab/user-guide/nas-ssh-terminal",
+              "digitallab/user-guide/ai-assistant",
+              "digitallab/user-guide/settings"
+            ]
+          },
+          {
+            "group": "架构",
+            "pages": [
+              "digitallab/architecture/overview",
+              "digitallab/architecture/electron-python",
+              "digitallab/architecture/jsonl-ipc",
+              "digitallab/architecture/system-state",
+              "digitallab/architecture/panels",
+              "digitallab/architecture/configuration-storage"
+            ]
+          },
+          {
+            "group": "开发者指南",
+            "pages": [
+              "digitallab/development/environment",
+              "digitallab/development/running-locally",
+              "digitallab/development/repository-structure",
+              "digitallab/development/build-and-packaging",
+              "digitallab/development/contributing"
+            ]
+          },
+          {
+            "group": "隐私与安全",
+            "pages": [
+              "digitallab/privacy/privacy-policy",
+              "digitallab/privacy/data-storage",
+              "digitallab/privacy/ai-data-flow",
+              "digitallab/privacy/sensitive-information",
+              "digitallab/privacy/security-limitations"
+            ]
+          },
+          {
+            "group": "项目",
+            "pages": [
+              "digitallab/project/changelog",
+              "digitallab/project/roadmap",
+              "digitallab/project/license"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "logo": {
     "light": "/logo/light.svg",

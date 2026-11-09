@@ -1,0 +1,87 @@
+---
+title: "系统架构"
+description: "DigitalLab 的系统架构概览，从渲染进程到 Python 后端的层级关系与设计原则。"
+sidebarTitle: "架构概览"
+---
+
+DigitalLab 采用 Electron + Python 的混合桌面架构，兼顾前端富交互与后端系统级采集能力。所有数据统一汇聚到 `system_state`，所有 UI 只消费 `system_state`，形成单一数据源。
+
+## 架构分层
+
+```text
+┌──────────────────────────────────────┐
+│  Electron 主进程（main.js）           │
+│  窗口管理 · 系统托盘 · IPC 通信        │
+│         │ spawn                      │
+│         ▼                            │
+│  Python 子进程（main.py）             │
+│  监控采集 · 硬件检测 · NAS SSH · AI   │
+│         │                            │
+│  stdin/stdout JSON Lines 协议        │
+│  请求-响应：requestId 匹配            │
+│  状态更新：广播模式                    │
+└──────────────────────────────────────┘
+```
+
+### 渲染层
+
+渲染层由 `dashboard.html` 与五个面板脚本组成：
+
+- **仪表盘** (`panels/dashboard.js`)
+- **设备中心** (`panels/device-center.js`)
+- **SSH 终端** (`panels/terminal.js`)
+- **AI 助手** (`panels/ai-assistant.js`)
+- **设置面板** (`panels/settings.js`)
+
+面板通过 `preload.js` 暴露的 `window.digitalLab` API 与主进程通信，并订阅 `state-update` 事件以刷新界面。
+
+### IPC 桥接层
+
+`preload.js` 使用 `contextBridge.exposeInMainWorld('digitalLab', ...)` 将安全接口注入渲染进程，包含状态订阅、命令发送、配置读写、AI 流式事件等通道。`nodeIntegration` 为 `false`，`contextIsolation` 为 `true`，渲染进程无法直接访问 Node.js 与 Electron 内部 API。
+
+### Electron 主进程层
+
+`main.js` 负责窗口生命周期、系统托盘、单实例锁、Python 子进程管理、阈值告警通知、主题/语言/硬件加速等应用级配置读写。它通过标准输入输出与 Python 子进程交换 JSON Lines 消息。
+
+### Python 后端层
+
+`main.py` 在 `--json-mode` 下启动，通过 `stdin/stdout` 与主进程通信。它初始化采集器、NAS 监控、事件总线与系统状态，并在一个独立线程中持续读取 stdin 的命令。监控采集运行在双线程模型中（快速采集与慢速硬件刷新分离）。
+
+## 核心设计原则
+
+README 中定义了以下架构原则：
+
+- **所有数据进入 `system_state`，所有 UI 只消费 `system_state`**：单一数据源，前端与后端解耦。
+- **本地优先，模块化，可扩展**：核心功能无需网络，面板按需加载。
+- **Electron 核心通信不依赖 HTTP**：采用 JSON Lines IPC 协议，零网络开销；同时提供可选的 Flask Web Dashboard 服务。
+- **Privacy First**：设备数据默认保存在本地，敏感配置存储于用户目录。
+
+<Note>
+  可选的 Web Dashboard 基于 Flask，在 `config.json` 中配置监听地址与端口（默认 `127.0.0.1:8080`）。README 与 CHANGELOG v1.0.0 均提到该服务为可选，但目前源码中未提供使用说明，实际启用方式需进一步验证。
+</Note>
+
+## 模块导航
+
+接下来六页将分别从进程集成、通信协议、状态管理、面板加载与配置存储五个维度深入架构细节：
+
+<CardGroup cols={2}>
+  <Card title="Electron 与 Python 集成" icon="plug" href="/digitallab/architecture/electron-python">
+    子进程启动方式、崩溃自动重启、单实例锁与托盘行为
+  </Card>
+
+  <Card title="JSON Lines IPC 协议" icon="code" href="/digitallab/architecture/jsonl-ipc">
+    消息帧格式、命令表、错误响应与流式事件
+  </Card>
+
+  <Card title="系统状态与事件管理" icon="database" href="/digitallab/architecture/system-state">
+    `system_state` 单一数据源、`event_bus` 与 `collector` 双线程采集
+  </Card>
+
+  <Card title="模块化面板架构" icon="layout" href="/digitallab/architecture/panels">
+    面板注册表、按需加载、保活与会话保持机制
+  </Card>
+
+  <Card title="配置与存储" icon="folder" href="/digitallab/architecture/configuration-storage">
+    双层配置存储、UI 偏好文件与首次运行迁移
+  </Card>
+</CardGroup>

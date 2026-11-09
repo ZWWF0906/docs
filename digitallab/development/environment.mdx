@@ -1,0 +1,65 @@
+---
+title: "开发环境"
+description: "搭建 DigitalLab 开发环境所需的 Node.js、Python 与依赖版本要求。"
+sidebarTitle: "开发环境"
+---
+
+DigitalLab 采用 Electron + Python 双进程架构，开发前需要同时准备 Node.js 与 Python 环境。
+
+## 环境要求
+
+| 组件 | 版本要求 |
+| --- | --- |
+| Node.js | 18+ |
+| Python | 3.10+ |
+| 操作系统 | 打包目标为 Windows（electron-builder `--win`） |
+
+<Note>
+  requirements.txt 文件头部的注释写着运行环境为 Windows 7/8/10/11 x64 与 Python 3.7+，且 `core/config.py` 中检查的最小版本为 Python 3.7。README 中的要求为 Python 3.10+ 与 Windows 10+，本文档以 README 要求为准。若你使用 Python 3.7 至 3.9 之间的版本，可能遇到兼容性问题。
+</Note>
+
+## Node.js 依赖
+
+前端与桌面层依赖通过 `npm install` 安装。关键包如下（取自 `package.json`）：
+
+| 包名 | 用途 |
+| --- | --- |
+| `electron` | Electron 主进程与渲染进程运行时 |
+| `electron-builder` | 应用打包与安装程序生成 |
+| `@xterm/xterm` | SSH 终端前端渲染 |
+| `@xterm/addon-fit` | 终端尺寸自适应 |
+| `@fontsource-variable/inter` | 界面字体（Inter） |
+| `@fontsource-variable/jetbrains-mono` | 终端等宽字体（JetBrains Mono） |
+| `@fontsource-variable/orbitron` | 装饰性字体（Orbitron） |
+
+## Python 依赖
+
+Python 后端依赖列于 `requirements.txt`，建议通过 `pip install -r requirements.txt` 安装：
+
+| 包名 | 最低版本 | 用途 |
+| --- | --- | --- |
+| `psutil` | 5.8 | 系统监控（CPU、内存、磁盘、进程采集） |
+| `paramiko` | 3.4 | SSH 远程监控与终端连接 |
+| `flask` | 2.0 | 可选 Web Dashboard API |
+| `flask-cors` | 4.0 | Web Dashboard 跨域支持 |
+| `matplotlib` | 3.3 | 图表生成（`report` 命令） |
+
+以下依赖为可选，安装后可提升硬件信息采集精度：
+
+| 包名 | 用途 |
+| --- | --- |
+| `nvidia-ml-py` (>=12.0) | NVIDIA GPU 温度与利用率（需 NVIDIA 驱动） |
+| `py-cpuinfo` (>=9.0) | CPU 型号精确识别 |
+| `pyamdgpuinfo` (>=1.0) | AMD GPU 信息采集（需 ROCm/驱动） |
+
+## 打包依赖
+
+README 中的打包说明使用 `pyinstaller backend.spec` 生成 `backend.exe`，但 `pyinstaller` **未列于** `requirements.txt`。如果你需要执行打包，请单独安装：
+
+```bash
+pip install pyinstaller
+```
+
+## 平台限制
+
+目前打包配置仅指定 Windows（`electron-builder --win`，NSIS 目标）。本文档不涉及其他操作系统的构建步骤。

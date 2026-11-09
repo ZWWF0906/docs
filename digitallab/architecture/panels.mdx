@@ -1,0 +1,100 @@
+---
+title: "模块化面板架构"
+description: "DigitalLab 的面板注册、按需加载、国际化与状态消费机制。"
+sidebarTitle: "面板架构"
+---
+
+DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.js` 中，由 `dashboard.html` 按需加载与切换。面板按 README 的"面板按需加载"原则运行：核心功能无需网络，面板仅在用户切换时初始化。
+
+## 面板注册表
+
+`panels/index.js` 导出 `PANELS` 数组，每个面板包含：
+
+| 字段 | 说明 |
+| --- | --- |
+| `id` | 面板标识，如 `dashboard`、`terminal`、`ai` |
+| `nameKey` | i18n 键名，如 `nav.dashboard` |
+| `icon` | 侧栏显示的 Unicode 图标字符 |
+| `init` | 面板初始化函数 `(container, api) => hooks` |
+
+当前五个面板：
+
+- `dashboard`（仪表盘）
+- `device-center`（设备中心）
+- `terminal`（SSH 终端）
+- `ai`（AI 助手）
+- `settings`（设置面板）
+
+## 国际化面板名
+
+面板名称不硬编码，而是通过 `i18n.js` 与 `locales/` 下的语言文件动态解析：
+
+- `panels/index.js` 中的 `getPanelName(id)` 调用 `window.DigitalLabI18n.t(p.nameKey)`。
+- 语言切换后，`dashboard.html` 监听 `language-changed` 事件并重建侧栏，从而刷新面板名称。
+
+支持三种界面语言：简体中文（`zh-CN`）、英文（`en-US`）、日文（`ja-JP`），对应 `locales/zh-CN.js`、`locales/en-US.js`、`locales/ja-JP.js`。
+
+## 加载与生命周期
+
+`dashboard.html` 中的模块脚本负责面板切换逻辑：
+
+1. **初始加载**：默认激活 `dashboard` 面板。
+2. **切换面板**：
+   - 更新侧栏高亮。
+   - 若目标面板是保活面板（`terminal`），且已有缓存容器，则将其从隐藏容器移回主区并调用 `attach()`，不重新初始化。
+   - 其他面板切换时销毁旧容器并重新调用 `init()`。
+3. **保活机制**：v1.5.0 起 `terminal` 面板启用保活。切换出去时调用 `detach()` 并移入 `#panel-hold` 隐藏容器；切回时调用 `attach()`，不重建 xterm 实例，也不重新建立 SSH 连接。后端为每个会话保留 256 KB 输出环形缓冲，重附着后直接回放。
+
+## 状态消费
+
+所有面板通过 `window.digitalLab.onStateUpdate(callback)` 订阅全局状态广播。回调接收的状态帧结构与 /digitallab/architecture/jsonl-ipc 中的状态帧一致。
+
+以 `dashboard.js` 为例：
+
+- 收到 `state-update` 后读取 `state.monitor.cpu`、`state.hardware` 等字段更新卡片数值。
+- 进程表读取 `state.monitor.processes` 并渲染前 15 条。
+
+以 `device-center.js` 为例：
+
+- 聚合本机与 NAS 设备状态，渲染在线/离线设备卡片与资源指标。
+
+以 `terminal.js` 为例：
+
+- 通过 `onTerminalData` 接收终端输出帧。
+- 通过 `onTerminalConnectResult` 处理异步建链结果。
+
+以 `ai-assistant.js` 为例：
+
+- 通过 `onAiToken` / `onAiDone` 接收流式回复。
+- 通过 `sendCommand({ cmd: 'ai_chat', ... })` 发起对话请求。
+
+以 `settings.js` 为例：
+
+- 通过 `getConfig()` / `saveConfig()` 读写配置。
+- 支持标签页切换（NAS / AI / 采集 / 软件 / 关于），语言切换后记住当前标签页。
+
+## 面板与用户指南的对应关系
+
+每个面板的详细使用方法参见用户指南：
+
+<CardGroup cols={2}>
+  <Card title="仪表盘与监控" icon="gauge" href="/digitallab/user-guide/dashboard">
+    CPU、内存、磁盘与网络实时监控，以及性能历史与进程列表
+  </Card>
+
+  <Card title="设备中心" icon="desktop" href="/digitallab/user-guide/device-center">
+    本机硬件信息与多设备状态聚合
+  </Card>
+
+  <Card title="NAS 与 SSH 终端" icon="terminal" href="/digitallab/user-guide/nas-ssh-terminal">
+    NAS 设备管理与基于 xterm.js 的 SSH 终端
+  </Card>
+
+  <Card title="AI 助手" icon="sparkles" href="/digitallab/user-guide/ai-assistant">
+    流式对话、模型切换与系统上下文注入
+  </Card>
+
+  <Card title="设置与偏好" icon="gear" href="/digitallab/user-guide/settings">
+    设备管理、AI 配置、主题与语言切换
+  </Card>
+</CardGroup>

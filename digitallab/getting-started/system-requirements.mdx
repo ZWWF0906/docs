@@ -1,0 +1,31 @@
+---
+title: "系统要求"
+description: "DigitalLab 对操作系统、处理器、内存、显卡和存储空间的最低配置要求。"
+sidebarTitle: "系统要求"
+---
+
+DigitalLab 目前面向 Windows 桌面平台。以下是运行 DigitalLab 的最低系统要求。
+
+## 最低配置
+
+| 要求 | 最低配置 |
+| --- | --- |
+| 操作系统 | Windows 10 或更高版本 |
+| 处理器 | x64 架构，双核 1.5 GHz |
+| 内存 | 4 GB |
+| 显卡 | 支持 DirectX 9 |
+| 存储 | 2 GB 可用空间 |
+
+## 补充说明
+
+- **无需安装 Python 或 Node.js**：所有依赖已内置在发行包中，普通用户无需额外安装运行环境。
+- **硬件加速默认关闭**：应用默认禁用硬件加速，以提升在虚拟机环境下的兼容性。你可以在**设置面板**中重新开启，修改后需重启生效。
+- **本地 AI 模型的显存建议**：若要启用本地 AI 大模型（通过 Ollama），建议显卡至少有 1 GB 或 2 GB 显存。
+
+## 开发者环境
+
+如需从源码开发或自行构建 DigitalLab，需要 Node.js 18+ 和 Python 3.10+。详细的开发者环境配置请参见 [开发环境](/digitallab/development/environment)。
+
+<Note>
+  `requirements.txt` 文件头部标注的运行环境为 Windows 7/8/10/11 x64 和 Python 3.7+，与 README 中"Windows 10+ / Python 3.10+"存在差异。**请以 README 的系统要求为准**，README 是当前版本的官方系统要求说明。
+</Note>

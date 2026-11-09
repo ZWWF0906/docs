@@ -1,0 +1,74 @@
+---
+title: "产品概览"
+description: "DigitalLab 是一款面向个人设备管理、数据感知与 AI 扩展的本地优先桌面应用。"
+sidebarTitle: "产品概览"
+---
+
+DigitalLab 是一款**个人数字实验室平台**，面向个人设备管理、数据感知与 AI 扩展的桌面应用。本地优先、模块化、可扩展，将你的个人电脑转变为一个可编程、可感知、可对话的数字工作空间。
+
+当前版本为 **v1.5.0**，支持 **Windows 10 及更高版本**。项目源码与发布版本托管在 GitHub，同时提供 Microsoft Store 上架版本。
+
+## 核心设计原则
+
+DigitalLab 的设计围绕以下四项原则展开：
+
+- **所有数据进入 system_state，所有 UI 只消费 system_state**：单一数据源，前端与后端解耦
+- **本地优先，模块化，可扩展**：核心功能无需网络，面板按需加载
+- **Electron 核心通信不依赖 HTTP**：采用 JSON Lines IPC 协议，零网络开销；同时提供可选 Web Dashboard 服务
+- **Privacy First**：设备数据默认保存在本地，敏感配置存储于用户目录
+
+## 主要功能面板
+
+DigitalLab 由五个模块化面板组成：
+
+<CardGroup cols={2}>
+  <Card title="仪表盘与监控" icon="gauge" href="/digitallab/user-guide/dashboard">
+    CPU、内存、磁盘、网络速度实时监控，性能历史图表，进程列表与 NAS 状态卡片
+  </Card>
+
+  <Card title="设备中心" icon="microchip" href="/digitallab/user-guide/device-center">
+    CPU、GPU、内存、磁盘、显示器、网络适配器等本机硬件信息全景展示
+  </Card>
+
+  <Card title="NAS 与 SSH 终端" icon="terminal" href="/digitallab/user-guide/nas-ssh-terminal">
+    基于 xterm.js 的 SSH 终端，支持多会话管理，远程连接 NAS 设备
+  </Card>
+
+  <Card title="AI 助手" icon="bot" href="/digitallab/user-guide/ai-assistant">
+    支持 Ollama 本地模型或 OpenAI 兼容 API，多轮对话，自动注入系统状态上下文
+  </Card>
+
+  <Card title="设置与偏好" icon="gear" href="/digitallab/user-guide/settings">
+    日志级别、监控阈值、NAS 设备管理、AI 提供商切换、主题与硬件加速开关
+  </Card>
+</CardGroup>
+
+<Warning>
+  SSH 终端与 AI 助手目前处于**测试阶段**，首次进入时会弹窗提示。SSH 会话暂不支持自动重连，AI 助手当前为对话模式，不包含 Agent 工具调用能力。
+</Warning>
+
+## 系统架构
+
+DigitalLab 采用 Electron + Python 混合架构：Electron 主进程负责窗口管理与 IPC 通信，Python 子进程负责监控采集、硬件检测、NAS SSH 与 AI 功能。两者通过 stdin/stdout 上的 JSON Lines 协议通信。详细架构说明请参见 [系统架构概览](/digitallab/architecture/overview)。
+
+## 获取 DigitalLab
+
+- GitHub 仓库：[https://github.com/ZWWF0906/Digital-Lab](https://github.com/ZWWF0906/Digital-Lab)
+- 发布版本：[https://github.com/ZWWF0906/Digital-Lab/releases](https://github.com/ZWWF0906/Digital-Lab/releases)
+- Microsoft Store：[https://apps.microsoft.com/detail/9n0rtlx1bcp5](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
+
+## 下一步
+
+<CardGroup cols={3}>
+  <Card title="功能特性" icon="list" href="/digitallab/getting-started/features">
+    了解每个面板的详细功能与版本演进
+  </Card>
+
+  <Card title="安装指南" icon="download" href="/digitallab/getting-started/installation">
+    下载并安装 DigitalLab
+  </Card>
+
+  <Card title="快速上手" icon="bolt" href="/quickstart">
+    从安装到首次使用的完整引导
+  </Card>
+</CardGroup>

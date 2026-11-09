@@ -1,0 +1,158 @@
+---
+title: "JSON Lines IPC 协议"
+description: "Electron 主进程与 Python 子进程之间的 JSON Lines 通信协议，包括请求响应、流式事件与状态广播。"
+sidebarTitle: "JSON Lines IPC"
+---
+
+DigitalLab 的核心通信采用 JSON Lines（JSONL）协议：每一行是一个完整的 JSON 对象，通过 UTF-8 编码在 `stdin/stdout` 上单向传输。Electron 主进程向 Python 子进程的 `stdin` 发送命令，Python 向 `stdout` 返回响应、事件与状态帧。
+
+## 消息帧格式
+
+### 请求帧（主进程 → Python）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `cmd` | `string` | 命令名称 |
+| `requestId` | `string` | 由 `crypto.randomUUID()` 生成，用于匹配响应 |
+| 其他字段 | 视命令而定 | 如 `hours`、`messages`、`provider`、`session_id` 等 |
+
+### 响应帧（Python → 主进程）
+
+命令处理完成后，Python 输出一行 JSON 并附带：
+
+- `__cmd_response__: true` 标记
+- `requestId` 回显请求中的 ID
+
+若出错，响应包含 `error` 字段，常见取值：
+
+- `"unknown command"`：命令不存在
+- `"handler error: ..."`：命令处理器抛异常
+- `"invalid JSON"`：stdin 行无法解析为 JSON
+
+### 超时
+
+主进程 `sendToPython()` 设置 10 秒超时；超时后从 `pendingRequests` 中删除该请求并返回拒绝 Promise。
+
+## Python 命令表
+
+以下为 `main.py` 中 `_handle_command` 支持的命令：
+
+| 命令 | 说明 |
+| --- | --- |
+| `get_hardware` | 获取当前硬件快照（从 `_format_state()` 提取 `hardware`） |
+| `get_processes` | 获取当前进程列表（从 `_format_state()` 提取 `monitor.processes`） |
+| `get_history` | 查询历史监控数据，参数 `hours` |
+| `ai_message` | 兼容旧接口，返回占位提示 |
+| `ai_chat` | 流式 AI 对话，参数 `messages`、`provider`、`lang` |
+| `get_ai_memory` | 获取 AI 记忆设置与条目列表 |
+| `delete_ai_memory` | 按索引删除 AI 记忆 |
+| `clear_ai_memory` | 清空全部 AI 记忆 |
+| `dedupe_ai_memory` | 合并重复记忆 |
+| `chat_history_get` | 获取对话历史 |
+| `chat_history_append` | 追加对话记录 |
+| `chat_history_clear` | 清空对话历史 |
+| `chat_history_delete` | 按 `id` 或 `index` 删除单条记录 |
+| `ping` | 心跳测试，返回 `{ pong: true }` |
+| `get_config` | 获取完整配置（含敏感字段从 `user_config.json` 合并） |
+| `save_config` | 保存配置，参数 `config` |
+| `test_nas_connection` | 测试 NAS 连通性，支持 `async` 模式 |
+| `reload_config` | 重载配置：停止 NAS 监控、清理已删除设备状态、重载、重启监控 |
+| `get_nas_devices` | 获取已配置的 NAS 设备列表 |
+| `terminal_input` | 向终端会话发送输入，参数 `session_id`、`data` |
+| `terminal_resize` | 调整终端 PTY 尺寸，参数 `session_id`、`cols`、`rows` |
+| `terminal_close` | 关闭终端会话 |
+| `terminal_list` | 列出后端存活会话 |
+| `terminal_attach` | 重附着会话并回放环形缓冲 |
+| `ssh_terminal_init` | 初始化 SSH 终端连接，支持 `async` 模式 |
+
+## 流式与异步事件
+
+部分操作不通过 `__cmd_response__` 返回，而是以独立事件帧推送：
+
+### AI 流式事件
+
+- `type: "ai_token"`：逐字 token，带 `requestId` 与 `data.token`。
+- `type: "ai_done"`：流结束，带完整 `text`、`memory`、`error` 与 `requestId`。
+
+### 异步连接结果（v1.5.0+）
+
+- `type: "terminal_connect_result"`：SSH 建链结果，含 `ok`、`session_id` 或 `error`。
+- `type: "nas_test_result"`：NAS 连通性测试结果，含 `ok` 与错误信息。
+
+### 终端输出
+
+终端会话的输出帧不通过命令响应，而是直接推送：
+
+```json
+{"session_id": "a1b2c3d4", "data": "ls\r\nfile.txt\r\n"}
+```
+
+## 状态广播
+
+Python 主循环每秒调用 `_format_state()` 构建状态帧并输出到 stdout。若当前帧字符串与上一帧完全相同，则跳过发送，但每 5 秒至少发送一次作为心跳：
+
+```python
+if frame != _last_frame or (now - _last_frame_ts) >= _HEARTBEAT_SECONDS:
+    _safe_print(frame, flush=True)
+    _last_frame = frame
+    _last_frame_ts = now
+```
+
+<Note>
+  上述状态广播去重行为来自当前仓库主分支源码中的主循环实现。源码注释中标记了 1.5.1 的清理项，该实现细节可能在后续版本中调整。
+</Note>
+
+状态帧包含以下顶层键：
+
+- `monitor`：CPU、内存、磁盘、网速、进程列表（最多 15 条）。
+- `hardware`：CPU、GPU、内存、磁盘、系统信息摘要。
+- `nas`：各 NAS 设备的在线状态与负载。
+- `alerts`：最近 5 条告警记录（含递增 `seq`）。
+
+主进程收到状态帧后，通过 `mainWindow.webContents.send('state-update', data)` 广播给渲染进程。告警部分按 `seq` 去重，只弹出未通知过的新告警。
+
+### stdout 锁
+
+Python 后端使用 `_stdout_lock = threading.Lock()` 保护 `_safe_print`，防止主循环的状态推送与命令响应/流式事件在 stdout 上交织，导致 JSON 解析失败。
+
+## 渲染进程桥接 API
+
+`preload.js` 暴露的 `window.digitalLab` 中与协议相关的关键方法：
+
+| 方法 | IPC 通道 | 说明 |
+| --- | --- | --- |
+| `onStateUpdate(callback)` | `state-update` | 订阅状态广播 |
+| `sendCommand(cmd)` | `send-command` | 发送任意命令并等待响应 |
+| `aiChat(messages, provider)` | `send-command` (`cmd: 'ai_chat'`) | 发起流式 AI 对话 |
+| `onAiToken(callback)` | `ai-token` | 订阅 AI token 流 |
+| `onAiDone(callback)` | `ai-done` | 订阅 AI 回复结束 |
+| `onTerminalData(callback)` | `terminal-data` | 订阅终端输出 |
+| `onTerminalConnectResult(callback)` | `terminal-connect-result` | 订阅 SSH 建链结果 |
+| `onNasTestResult(callback)` | `nas-test-result` | 订阅 NAS 连通性结果 |
+| `onPythonStatus(callback)` | `python-status` | 订阅 Python 进程可用性状态 |
+
+## 示例 JSON Lines
+
+**请求**：
+
+```json
+{"cmd": "get_history", "hours": 24, "requestId": "a1b2-c3d4-e5f6-7890"}
+```
+
+**响应**：
+
+```json
+{"cpu_avg": 12.3, "cpu_max": 45.6, "memory_avg": 56.7, "memory_max": 78.9, "disk_avg": 34.5, "disk_max": 67.8, "count": 1440, "__cmd_response__": true, "requestId": "a1b2-c3d4-e5f6-7890"}
+```
+
+**AI token 流**：
+
+```json
+{"type": "ai_token", "requestId": "b2c3-d4e5-f6g7-8901", "data": {"token": "你好", "kind": "content"}}
+```
+
+**状态帧（节选）**：
+
+```json
+{"monitor": {"cpu": 8.2, "memory": 42.1, "disk": 55.3, "network_speed": 12.5, "processes": [...]}, "hardware": {"cpu": {"model": "Intel Core i7", "cores": 8, "threads": 16}, "gpu": {"name": "RTX 3060", "vram_gb": 12}}, "nas": {"NAS-01": {"online": true, "cpu": 15.0, "memory": 32.0, "disk": 40.0}}, "alerts": []}
+```

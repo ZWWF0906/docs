@@ -1,0 +1,29 @@
+---
+title: "已知安全限制"
+description: "DigitalLab 当前版本已知的存储、传输、日志与功能层面的安全限制汇总。"
+---
+
+本页汇总当前版本已确认的安全与隐私限制。所有条目均来自 PRIVACY.md、README 或 CHANGELOG，未添加推测性威胁或 CVE。
+
+| 序号 | 限制 | 影响 | 源文档提供的缓解措施 | 来源 |
+| --- | --- | --- | --- | --- |
+| 1 | 日志未做脱敏处理 | 日志字段可能包含 NAS 设备名称与主机地址等可读信息 | 源文档未提供；可手动删除 `%APPDATA%\DigitalLab\logs\` 目录 | PRIVACY.md |
+| 2 | 凭据以明文形式存储在 `user_config.json` | 文件被获取即可直接读取 API Key、NAS 密码等 | 不要分享 `user_config.json`；按敏感文件保管 | PRIVACY.md |
+| 3 | HTTPS 未强制用于 AI 服务端点 | 若配置 `http` 端点，传输可能未加密 | 使用 `https` 端点并自行确认服务端安全性 | PRIVACY.md |
+| 4 | NAS SSH 凭据通过本地 IPC 传给渲染进程 | 仅限本机进程间传递，不是远程传输 | 源文档未提供 | PRIVACY.md |
+| 5 | 卸载应用不会自动删除 `%APPDATA%` 数据 | 个人数据可能留在本机 | 手动删除 `%APPDATA%\DigitalLab\` 和 `%APPDATA%\digital-lab\` | PRIVACY.md |
+| 6 | 关闭"保存对话历史"不删除已有记录 | 历史文件仍保留在本机 | 手动清空或在设置中一键清空 | PRIVACY.md |
+| 7 | 关闭"保存对话历史"不会停止 AI 请求 | 当前消息与已有会话内容仍随请求发送 | 源文档未提供 | PRIVACY.md |
+| 8 | 禁用 AI 记忆不删除已有记忆文件 | `ai_memory.jsonl` 仍保留在本机 | 在设置中删除或清空记忆；若修改过目录，同时删除旧目录文件 | PRIVACY.md |
+| 9 | 当前界面未提供单条对话历史删除入口 | 无法逐条删除记录 | 一键清空全部历史；后端已存在对应接口 | PRIVACY.md |
+| 10 | SSH 会话暂不支持自动重连 | 连接中断后需手动重建会话 | 源文档未提供 | README / CHANGELOG |
+| 11 | SSH 终端处于测试阶段 | 功能稳定性可能存在不足 | 首次进入时会弹窗提示 | README |
+| 12 | AI 助手处于测试阶段 | 功能稳定性可能存在不足；仅支持对话，不包含 Agent 工具调用 | 首次进入时会弹窗提示 | README / CHANGELOG |
+| 13 | NAS 监控仅支持基于 Linux 的 NAS（通过 SSH 命令） | 其他平台 NAS 无法使用监控功能 | 源文档未提供 | CHANGELOG |
+
+## 如何报告问题
+
+如果你发现新的隐私或安全问题，请通过以下方式联系项目团队：
+
+- GitHub Issues: <a href="https://github.com/ZWWF0906/Digital-Lab/issues">[https://github.com/ZWWF0906/Digital-Lab/issues](https://github.com/ZWWF0906/Digital-Lab/issues)</a>
+- 邮箱: <a href="mailto:ZWWF0906@outlook.com">[ZWWF0906@outlook.com](mailto:ZWWF0906@outlook.com)</a>

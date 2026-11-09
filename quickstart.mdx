@@ -1,47 +1,87 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "快速上手"
+description: "从安装到日常使用的首次运行引导，帮助你在几分钟内熟悉 DigitalLab 的核心面板。"
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+本指南带你完成 DigitalLab 从安装到首次使用的全过程。基于 v1.5.0 版本的实际功能编写。
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+## 准备工作
 
-## Prerequisites
+在开始之前，请确认你的电脑满足 [系统要求](/digitallab/getting-started/system-requirements)，然后从 [安装指南](/digitallab/getting-started/installation) 下载并安装 DigitalLab。
 
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+## 首次运行
 
 <Steps>
-  <Step title="Install">
-    Describe how t<u>o</u> install your product or sign up.
-
-    ```bash
-    npm install your-package
-    ```
+  <Step title="启动与开屏动画">
+    首次启动时，应用会播放开屏动画：六边形与波形描边、字标浮现、自检项逐项点亮。你可以在**设置面板**的**软件**分页中关闭此动画，关闭后下次启动直接进入主界面。
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
-
-    ```bash
-    your-cli init
-    ```
+  <Step title="选择界面语言">
+    开屏动画结束后，进入引导的第一步：**选择界面语言**。DigitalLab 支持简体中文、英文和日文。选择后即时生效，之后可在**设置面板**中随时更改。
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+  <Step title="添加 NAS 设备">
+    第二步是**添加一台 NAS 设备**。填写以下信息：
 
-    ```bash
-    your-cli start
-    ```
+    - **名称**：设备名称
+    - **主机**：NAS 的 IP 地址
+    - **端口**：SSH 端口（通常为 22）
+    - **用户名**：SSH 用户名
+    - **密码**：SSH 密码
+
+    保存后，应用会尝试连接。你也可以点击"稍后配置"或"我没有 NAS，暂时使用本机监控"跳过此步。
+  </Step>
+  <Step title="检查连接">
+    第三步**检查连接**。应用会测试 NAS 的 SSH 连通性。如果连接通过且设备已在线，引导完成；如果超时，你可以选择重试或跳过，稍后在**设置面板**中重新测试。
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## 日常使用
 
-  Example: Need help? Reach out to us at [**ZWWF0906@outlook.com**](mailto:ZWWF0906@outlook.com).
-</Tip>
+### 查看仪表盘
+
+引导完成后，主界面默认显示 [仪表盘](/digitallab/user-guide/dashboard)。在这里你可以看到：
+
+- CPU、内存、磁盘、网络的实时监控指标
+- 24 小时性能历史图表
+- 进程 Top 15 列表
+- 已配置 NAS 设备的状态卡片
+
+### 打开设备中心
+
+点击侧边栏的**设备中心**，查看本机硬件全景信息：
+
+- CPU 型号、核心、线程、频率
+- 内存容量、类型、频率
+- GPU 型号、显存、温度
+- 磁盘型号、容量、健康度
+- 显示器、网络适配器、系统信息
+
+### 使用 AI 助手
+
+<Warning>
+  AI 助手目前处于**测试阶段**，首次进入时会弹窗提示。当前为对话模式，不包含 Agent 工具调用能力。
+</Warning>
+
+如需使用 AI 助手，请先在**设置面板**的 **AI 配置** 分页中进行以下配置之一：
+
+- **Ollama 本地**：填写本地 Ollama 地址（默认 `http://localhost:11434`）和模型名称（如 `qwen2.5:7b-instruct-q4_K_M`）
+- **云端 API**：填写 OpenAI 兼容 API 的地址、API Key 和模型名称（如 DeepSeek）
+
+配置完成后，返回 AI 助手面板即可开始对话。AI 会自动注入当前系统状态作为上下文，帮助你回答与 CPU、内存、磁盘、硬件和 NAS 相关的问题。
+
+<Info>
+  如果你使用云端模型，对话内容与系统状态摘要会随请求发送至你配置的服务端点。如需了解 AI 数据流的完整说明，请参见 [AI 数据流](/digitallab/privacy/ai-data-flow)。
+</Info>
+
+### 连接 SSH 终端
+
+<Warning>
+  SSH 终端目前处于**测试阶段**，首次进入时会弹窗提示。SSH 会话暂不支持自动重连。
+</Warning>
+
+使用 SSH 终端前，请确保 NAS 设备已开启 SSH 服务并已在**设置面板**中正确配置凭据。点击侧边栏的**终端**，选择已在线的 NAS 设备即可建立连接。v1.5.0 起，切换面板或隐藏窗口不会丢失会话。
+
+## 后续操作
+
+- 想调整监控阈值、主题或硬件加速？请前往 [设置与偏好](/digitallab/user-guide/settings)
+- 想了解更多关于隐私和数据存储的信息？请查看 [隐私政策](/digitallab/privacy/privacy-policy)
+- 遇到问题或有建议？通过 [GitHub Issues](https://github.com/ZWWF0906/Digital-Lab/issues) 或邮件 [**ZWWF0906@outlook.com**](mailto:ZWWF0906@outlook.com) 反馈

@@ -1,0 +1,80 @@
+---
+title: "系统状态与事件管理"
+description: "system_state 作为单一数据源的管理机制，以及 event_bus、collector 双线程采集的实现细节。"
+sidebarTitle: "系统状态与事件"
+---
+
+DigitalLab 的架构原则是"所有数据进入 `system_state`，所有 UI 只消费 `system_state`"。本页说明 `system_state`、`event_bus` 与 `collector` 如何协同实现这一原则。
+
+## system_state：全局状态中心
+
+`core/system_state.py` 实现了一个线程安全的状态字典：
+
+- 内部使用 `_system_state` 字典与 `_lock` 线程锁。
+- 命名空间式存储：如 `monitor`、`hardware`、`nas` 等顶层键。
+- 值格式为 `{ "value": x, "ts": t }`，`_upsert_with_ts` 在写入时检查时间戳，只保留较新的值，避免旧数据覆盖新数据。
+
+### 关键 API
+
+| 方法 | 说明 |
+| --- | --- |
+| `__getitem__(key)` | 获取或创建命名空间 |
+| `__setitem__(key, value)` | 直接设置命名空间值 |
+| `update(key, sub_key, value)` | 更新命名空间内的子键 |
+| `delete(key, sub_key)` | 删除命名空间内的子键 |
+| `snapshot()` | 返回当前状态的深度拷贝字典 |
+
+### \_format_state 的构建过程
+
+`main.py` 中的 `_format_state()` 每秒被主循环调用，从 `system_state` 提取并格式化数据：
+
+1. 取 `system_state.snapshot()`。
+2. 从 `monitor` 命名空间读取 `cpu`、`memory`、`disk`；这些值可能是 `{"value": x, "ts": t}` 字典或纯数值，需用 `isinstance` 判断并解包。
+3. 进程列表取 `monitor.processes` 的前 15 条。
+4. 硬件数据取 `hardware` 命名空间，提取 CPU、GPU、内存、磁盘、系统信息的摘要字段。
+5. NAS 数据直接取 `nas` 命名空间。
+6. 告警取 `monitor.alerts_history` 的最后 5 条。
+
+最终构建的帧结构与前文 /digitallab/architecture/jsonl-ipc 中的状态帧示例一致。
+
+## event_bus：事件分发
+
+`core/event_bus.py` 提供一个轻量级的事件总线：
+
+- `subscribe(callback)`：注册回调函数。
+- `emit(module, key, value)`：发送单条事件，事件 shape 为 `{ module, key, value, ts }`。
+- `emit_batch(module, updates)`：批量发送同一模块的多条更新，共享一个 `ts`。
+
+回调在调用者的线程中同步执行；`_bus` 持有订阅者列表的副本，避免在迭代时修改。
+
+## collector：双线程采集
+
+`core/collector.py` 维护两个守护线程：
+
+### 快线程（`_run_fast`）
+
+- 初始化监控数据库。
+- 每 1 秒执行一次 `collect_and_store()`，采集 CPU、内存、磁盘使用率。
+- 采集成功后调用 `check_alerts()`，根据阈值与冷却时间判断是否产生告警。
+- 产生的告警写入 `system_state["monitor"]["alerts_history"]`，保留最近 100 条。
+
+### 慢线程（`_run_slow`）
+
+- 每 3 秒 tick 一次。
+- 调用 `daily_aggregate()` 进行按日性能汇总。
+- 每 10 个 tick（约 30 秒）调用 `refresh_hardware_live()` 刷新易变硬件信息（如温度、频率）。
+
+### 启动与停止
+
+- `start_collector(interval=3.0)`：若线程未运行则启动两个线程。
+- `stop_collector()`：设置停止事件并等待线程加入，超时 5 秒。
+
+## 告警去重
+
+`core/monitor.py` 中的告警使用 `seq` 序号去重：
+
+- `alert_state["seq"]` 在进程内递增，每产生一条告警 +1。
+- 重启后归零；主进程在 `startPython()` 开始时同步将 `lastSeenSeq` 归零，确保新进程告警不被遗漏。
+- 主进程只处理 `seq > lastSeenSeq` 的告警，并弹出 Windows 系统通知。
+
+告警的最小持续门槛为 30 秒（`ALERT_MIN_DURATION = 30`），连续超标满 30 秒才正式产出，避免瞬时抖动触发通知。

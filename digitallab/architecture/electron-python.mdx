@@ -1,0 +1,81 @@
+---
+title: "Electron 与 Python 集成"
+description: "Electron 主进程如何启动与管理 Python 子进程，包括开发模式与打包模式、崩溃自动重启与托盘行为。"
+sidebarTitle: "Electron 与 Python"
+---
+
+DigitalLab 的桌面功能由 Electron 主进程承载界面，Python 子进程负责系统监控、硬件检测、NAS SSH 与 AI 推理。两者通过标准输入输出的 JSON Lines 协议通信，不依赖 HTTP。
+
+## 子进程启动方式
+
+`main.js` 中的 `startPython()` 根据运行环境选择启动路径：
+
+**打包模式** (`app.isPackaged === true`)：
+
+- 使用 `resources/backend.exe`，由 PyInstaller 根据 `backend.spec` 打包生成。
+- 启动参数：`["--json-mode"]`。
+- 工作目录：`process.resourcesPath`。
+
+**开发模式**：
+
+- 优先使用项目根目录下的 `backend.exe`（如果存在）。
+- 否则使用系统 `python`，运行 `main.py --json-mode`。
+- 工作目录：`__dirname`（项目根目录）。
+
+启动时设置两个环境变量：
+
+- `PYTHONUNBUFFERED=1`：禁止 stdout 缓冲，确保 JSON Lines 帧即时发出。
+- `PYTHONIOENCODING=utf-8`：强制 UTF-8 编码，避免中文解码错误。
+
+```js
+pythonProcess = spawn(pythonPath, args, {
+  cwd: cwd,
+  stdio: ['pipe', 'pipe', 'pipe'],
+  env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' },
+});
+```
+
+## 孤儿进程清理
+
+根据仓库 main 分支源码，`main.py` 在 `cmd_json_mode()` 入口会先调用 `_kill_orphan_backends()`，清理上一次异常退出残留的 PyInstaller backend 进程。它只终止父进程已不存在的同名进程，跳过当前进程及其祖先链。
+
+<Note>
+  上述孤儿清理行为来自当前源码注释中标记的后续清理项。实现细节可能在不同版本间调整。
+</Note>
+
+## 崩溃自动重启
+
+主进程维护 `pythonRetryCount` 计数器与 `MAX_RETRIES = 3` 上限：
+
+- Python 进程因 `close` 或 `error` 退出时，主进程递增计数器。
+- 若未超限，2 秒后调用 `setTimeout(startPython, 2000)` 重新拉起。
+- 首次收到来自新进程的有效状态帧（含 `hardware` 字段）时，计数器重置为 0。
+- 超过 3 次后，主进程通过 `mainWindow.webContents.send('python-status', { available: false, retriesExhausted: true, ... })` 通知渲染进程，由 UI 呈现故障状态。
+
+```js
+if (pythonRetryCount > 0 && data.hardware) {
+  pythonRetryCount = 0;
+}
+```
+
+## 单实例锁与窗口行为
+
+- `app.requestSingleInstanceLock()` 在 `app.whenReady()` 之前调用；获取失败则直接 `app.quit()`。
+- 第二个实例启动时，通过 `second-instance` 事件将已有窗口还原并聚焦。
+- 关闭按钮不退出，而是隐藏到系统托盘；托盘菜单提供 **显示主窗口** / **退出** 两项。
+- 窗口默认尺寸 1100 x 750，最小尺寸 900 x 600。
+
+## 硬件加速开关
+
+默认关闭硬件加速，以兼容虚拟机环境。`main.js` 启动时读取应用级 `config.json` 中的 `hardware_acceleration` 键：
+
+- 若值为 `false` 或不存在，调用 `app.disableHardwareAcceleration()` 并追加 Chromium GPU 禁用开关。
+- 用户可在设置面板启用硬件加速；切换后需重启生效。
+
+## 日志与异常处理
+
+`main.js` 包含独立的日志子系统（v1.5.0 重写）：
+
+- 异步写入 `%APPDATA%\digital-lab\digital-lab.log`。
+- 单文件上限 5 MB，保留 3 个轮转文件；超过 50 MB 时直接删除。
+- `uncaughtException` / `unhandledRejection` 仅写日志，不调用 `console.*`，避免 EPIPE 自放大。

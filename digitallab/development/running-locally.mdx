@@ -1,0 +1,87 @@
+---
+title: "本地运行"
+description: "从源码克隆到启动开发模式，以及常见问题排查。"
+sidebarTitle: "本地运行"
+---
+
+本地运行需要同时启动 Electron 主进程与 Python 后端。开发模式下，`npm start` 会自动拉起 Python 子进程。
+
+## 获取源码
+
+```bash
+git clone https://github.com/ZWWF0906/Digital-Lab.git
+cd Digital-Lab
+```
+
+## 安装依赖
+
+```bash
+# 前端与 Electron 依赖
+npm install
+
+# Python 依赖
+pip install -r requirements.txt
+```
+
+## 启动开发模式
+
+```bash
+npm start
+```
+
+该命令对应 `package.json` 中的 `electron .`。启动后 Electron 主进程会按以下逻辑寻找 Python 后端：
+
+1. 如果当前目录下存在 `backend.exe`，则直接执行 `backend.exe --json-mode`。
+2. 否则使用系统 `python` 命令运行 `python main.py --json-mode`。
+
+因此，若你没有预先打包 `backend.exe`，请确保系统 `python` 已加入 `PATH`，且满足 Python 3.10+ 的版本要求。
+
+## Python 后端 CLI 模式
+
+根据仓库 `main.py` 中的源码，`main.py` 还支持命令行子命令。以下列出已验证的子命令名称与用途（`dlab` 为入口程序名）：
+
+| 子命令 | 用途 |
+| --- | --- |
+| `dlab init` | 初始化目录结构 |
+| `dlab status` | 显示系统状态 |
+| `dlab config` | 生成默认配置文件 |
+| `dlab state` | 查看 `system_state`（全局状态中心） |
+| `dlab state monitor` | 查看 monitor 命名空间 |
+| `dlab state hardware` | 查看 hardware 命名空间 |
+| `dlab state snapshot` | 查看 snapshot 命名空间 |
+| `dlab state logs` | 查看 logs 命名空间 |
+| `dlab hardware info` | 显示已缓存硬件信息 |
+| `dlab hardware refresh` | 强制刷新硬件信息 |
+| `dlab monitor` | 查看系统监控（支持 `--live`、 `--daemon` 等选项） |
+| `dlab launcher` | 启动快捷面板 |
+| `dlab report` | 生成分析报告 |
+| `dlab snapshot` | 系统快照管理（`list`、`create`、`delete`、`compare`、`report`） |
+
+<Note>
+  上述命令列表根据仓库 main 分支源码整理，实现细节可能在不同版本间发生变化。
+</Note>
+
+## 故障排查
+
+以下是基于源码可验证的几个常见情形：
+
+**Python 子进程反复崩溃**
+
+`main.js` 中设有自动重试机制：Python 进程异常退出后，主进程会在 2 秒后尝试重新拉起，最多重试 3 次。超过上限后，主进程会向渲染进程发送 `python-status` 事件，通知用户后端已不可用。崩溃时的 stderr 尾部内容会写入主进程日志文件。
+
+**查看主进程日志**
+
+Electron 主进程的日志写入 `%APPDATA%\digital-lab\digital-lab.log`（由 `main.js` 中的 `writeLog` 实现）。该文件记录窗口生命周期、异常摘要、I/O 错误摘要等信息，单文件上限 5 MB 并自动轮转。
+
+**开发模式找不到 Python**
+
+如果 `npm start` 报错提示无法启动 Python 子进程，请检查：
+
+- `python` 命令是否在系统 `PATH` 中。
+- Python 版本是否满足 README 中要求的 3.10+。
+- 是否在项目根目录执行了命令（开发模式依赖 `__dirname` 定位 `main.py`）。
+
+**已知限制**
+
+- SSH 终端与 AI 助手目前处于测试阶段，首次进入对应面板时会显示测试阶段提示。
+- SSH 会话暂不支持自动重连。

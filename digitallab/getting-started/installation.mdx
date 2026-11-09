@@ -1,0 +1,43 @@
+---
+title: "安装"
+description: "下载并安装 DigitalLab 的发行版本，以及 Microsoft Store 替代渠道和卸载说明。"
+sidebarTitle: "安装"
+---
+
+DigitalLab 提供两种获取方式：GitHub Releases 下载安装程序，以及 Microsoft Store 上架版本。以下说明面向最终用户；开发者如需从源码构建，请参见 [构建与打包](/digitallab/development/build-and-packaging)。
+
+## 通过 GitHub Releases 安装
+
+<Steps>
+  <Step title="下载安装包">
+    前往 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) 页面，下载最新的 `DigitalLab Setup.exe`。
+  </Step>
+  <Step title="运行安装程序">
+    运行下载的安装程序。安装过程中**可以更改安装目录**（`allowToChangeInstallationDirectory: true`，非一键安装）。
+  </Step>
+  <Step title="配置 NAS 设备">
+    启动应用后，打开**设置面板**，在 NAS 设备分页中添加你的 NAS 连接信息。
+  </Step>
+</Steps>
+
+## 通过 Microsoft Store 安装
+
+README 提供了 Microsoft Store 上架链接作为替代安装渠道：
+
+[Microsoft Store - DigitalLab](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
+
+你可以选择从 Microsoft Store 直接安装，安装后配置方式与上述相同。
+
+## 无需额外依赖
+
+普通用户**无需安装 Python 或 Node.js**，所有运行时依赖均已内置在发行包中。
+
+## 卸载
+
+卸载 DigitalLab 时需要注意以下数据残留：
+
+- 卸载程序**不会自动删除** `%APPDATA%\DigitalLab\` 和 `%APPDATA%\digital-lab\` 两个目录
+- 这两个目录分别保存了应用配置、监控数据、AI 对话历史以及界面偏好设置
+- 如需彻底清理数据，请在卸载后手动删除上述目录
+
+详情请参见 [数据处理与存储](/digitallab/privacy/data-storage)。

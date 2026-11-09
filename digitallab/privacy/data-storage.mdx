@@ -1,0 +1,75 @@
+---
+title: "数据处理与存储"
+description: "DigitalLab 采集的硬件、性能与 NAS 数据的存储位置、日志内容、以及数据删除方法。"
+---
+
+本页说明 DigitalLab 在本机采集的数据类别、存储目录结构、日志内容以及删除方式。所有数据默认写入本机用户可写目录，不上传至远程服务器。
+
+## 收集的信息（硬件与性能）
+
+DigitalLab 在本机采集以下信息，用于仪表盘展示、本地分析与 AI 助手提供上下文：
+
+1. **本机硬件信息**：CPU 型号与频率、内存容量与类型、GPU 型号与显存、磁盘型号与容量、显示器规格、网络适配器信息、系统型号与制造商。
+2. **系统性能数据**：CPU 使用率、内存占用率、磁盘使用率、网络速度、进程列表（PID、名称、CPU 和内存占用）。
+3. **NAS 设备数据**：你主动配置的 NAS 设备的 CPU、内存、磁盘、Docker 容器状态（通过 SSH 连接采集，数据存储在本机）。
+
+## 数据存储位置
+
+数据存储在用户可写目录，主要位置如下：
+
+```text
+%APPDATA%\DigitalLab\
+├── config.json               # 公共配置
+├── user_config.json           # 敏感配置（AI 配置与 API Key、NAS 设备与凭据、认证 Token 字段）
+├── logs/
+│   ├── cache/
+│   │   └── hardware.json      # 硬件信息缓存
+│   └── monitor/
+│       ├── monitor.db         # 性能快照数据库（SQLite）
+│       ├── daemon.log         # 监控日志
+│       └── daemon.pid         # 监控守护进程 PID
+├── memory/
+│   ├── chat_history.jsonl     # AI 对话历史（默认开启，可设上限或清空）
+│   └── ai_memory.jsonl        # AI 长期记忆（默认关闭，开启后生成）
+└── tools/ experiments/ notes/ archive/ interface/   # 预留目录（当前版本未实际写入业务数据）
+
+%APPDATA%\digital-lab\
+└── config.json                # 界面偏好（主题、语言、开屏动画开关、引导完成状态）
+```
+
+程序目录内也会写入运行数据（开发模式下是源码目录，安装后是安装目录内）：
+
+- `memory\daily.jsonl`：按日性能汇总
+- `snapshots\`：性能快照
+- `reports\`：报告
+- `launchers.json`：快捷启动器配置
+
+<Info>
+  说明：对话历史与 AI 记忆的保存目录可在设置中修改（对应 `ai.history.dir` 与 `ai.memory.dir`），修改后以上述你选择的目录为准。上表中的 `memory\` 是 AI 数据目录，与程序目录下用于按日汇总的 `memory\` 不是同一目录。
+</Info>
+
+## 日志
+
+DigitalLab 在本机记录运行日志，用于故障排查和性能分析：
+
+- `%APPDATA%\DigitalLab\logs\monitor\daemon.log`：JSON Lines 格式的监控日志，记录时间戳、级别、事件消息与相关字段（如进程 PID、采集计数、指标阈值、NAS 设备名称与主机地址）。
+- `%APPDATA%\digital-lab\digital-lab.log`：界面进程日志，记录窗口生命周期、异常与 I/O 错误摘要。
+- `%APPDATA%\DigitalLab\logs\cache\hardware.json`：硬件信息缓存，避免每次启动重复采集。
+
+日志仅写入本机用户可写目录，不包含 AI 对话内容与请求上下文，不上传至任何服务器，也不用于用户行为分析。日志未做脱敏处理。删除 `%APPDATA%\DigitalLab\logs\` 目录与 `%APPDATA%\digital-lab\digital-lab.log` 即可清除。
+
+## 数据删除方法
+
+### 通过应用内删除
+
+- **对话历史**：设置 → AI 助手 → 对话历史。可关闭保存（停止写入新记录）、设置保留条数上限（超出后按最旧裁剪）、一键清空全部历史（不可恢复）。当前界面未提供单条删除入口（后端存在对应接口）。
+- **AI 记忆**：设置 → AI 助手 → AI 记忆。可关闭记忆、查看条目、逐条删除、清空全部；另有"清理重复"可合并重复条目（同一内容保留最早一条）。若你改过记忆目录，请同时删除旧目录中的文件。
+- **其他配置**（AI 提供方与 Key、监控阈值、设备列表、主题、语言等）：只能逐项修改，或按下面的方式手动删除数据目录。
+
+### 手动删除
+
+- `%APPDATA%\DigitalLab\`：公共与敏感配置、监控日志与快照数据库、AI 对话历史、AI 记忆
+- `%APPDATA%\digital-lab\`：界面偏好（主题、语言、开屏动画开关、引导完成状态）与界面日志
+- 程序目录内的 `memory\`、`snapshots\`、`reports\` 与 `launchers.json`：按日汇总、性能快照、报告、快捷启动器配置
+
+卸载应用不会自动删除上面两个 `%APPDATA%` 目录，需要手动删除；程序目录内的这些文件会随安装目录一起被卸载程序移除。

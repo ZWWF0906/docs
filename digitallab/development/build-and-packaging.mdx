@@ -1,0 +1,80 @@
+---
+title: "构建与打包"
+description: "将 DigitalLab 源码构建为可分发的 Windows 桌面安装程序的两步流程。"
+sidebarTitle: "构建与打包"
+---
+
+构建 DigitalLab 分为两步：先用 PyInstaller 将 Python 后端打包为独立可执行文件，再用 electron-builder 将 Electron 应用打包为 Windows 安装程序。
+
+## 第一步：打包 Python 后端
+
+```bash
+pyinstaller backend.spec
+```
+
+### backend.spec 关键配置
+
+根据仓库中的 `backend.spec`，打包参数如下：
+
+| 参数 | 值 | 说明 |
+| --- | --- | --- |
+| 入口脚本 | `main.py` | Python 后端主入口 |
+| `hiddenimports` | `paramiko`、`psutil`、`pynvml` + `core` 全部子模块 | 确保运行时依赖被完整包含 |
+| `datas` | `('core', 'core')` | 将 `core/` 目录作为数据文件打包 |
+| `name` | `backend` | 输出可执行文件名为 `backend.exe` |
+| `console` | `True` | 保留控制台窗口，便于调试输出 |
+| `upx` | `True` | 启用 UPX 压缩 |
+
+### 输出位置注意事项
+
+PyInstaller 默认将单文件输出到 `dist/backend.exe`。而 `package.json` 的 `extraResources` 配置要求从项目根目录读取 `backend.exe`：
+
+```json
+"extraResources": [
+  {
+    "from": "backend.exe",
+    "to": "backend.exe"
+  }
+]
+```
+
+因此，在运行 `npm run build` 之前，你需要确保 `backend.exe` 位于项目根目录。若 PyInstaller 输出在 `dist/` 下，请手动将其移至根目录。该步骤在当前源码中未提供自动复制命令，需自行确认。
+
+## 第二步：打包 Electron 应用
+
+```bash
+npm run build
+```
+
+该命令执行 `electron-builder --win`，配置来自 `package.json` 的 `build` 字段：
+
+| 配置项 | 值 | 说明 |
+| --- | --- | --- |
+| `appId` | `com.digitallab.desktop` | 应用标识符 |
+| `productName` | `DigitalLab` | 产品名称 |
+| `directories.output` | `release` | 输出目录 |
+| `asar` | `false` | 禁用 ASAR 打包，便于访问面板资源 |
+| `win.target` | `nsis` | Windows 安装程序类型 |
+| `nsis.oneClick` | `false` | 显示安装向导，而非静默一键安装 |
+| `nsis.allowToChangeInstallationDirectory` | `true` | 允许用户修改安装路径 |
+| `win.icon` | `build/icons/icon.ico` | 安装包与可执行文件图标 |
+| `files` | `main.js`、`preload.js`、`dashboard.html`、`styles.css`、`panels/**/*`、`i18n.js`、`locales/**/*`、`build/icons/**/*`、`build/fonts/**/*` | 被打包进应用的文件清单 |
+| `extraResources` | `backend.exe` → `resources/backend.exe` | Python 后端作为额外资源打包 |
+
+打包产物位于 `release/` 目录下，包括 `DigitalLab Setup.exe` 安装程序。
+
+## .gitignore 中的构建产物
+
+仓库 `.gitignore` 已排除以下文件，避免误提交：
+
+- `backend.exe*`（PyInstaller 输出的可执行文件）
+- `dist/`（PyInstaller 默认输出目录）
+- `release/`（electron-builder 输出目录）
+
+## 构建 checklist
+
+1. 安装 Node.js 18+ 与 Python 3.10+。
+2. 执行 `npm install` 安装前端依赖。
+3. 执行 `pip install -r requirements.txt` 与 `pip install pyinstaller` 安装 Python 依赖。
+4. 执行 `pyinstaller backend.spec`，确认 `backend.exe` 已生成在项目根目录。
+5. 执行 `npm run build`，确认安装程序在 `release/` 目录中生成。

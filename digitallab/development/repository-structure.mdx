@@ -1,0 +1,92 @@
+---
+title: "仓库结构"
+description: "DigitalLab 源码仓库的目录组织与关键文件说明。"
+sidebarTitle: "仓库结构"
+---
+
+了解仓库结构有助于快速定位前端面板、Python 后端模块与构建配置。
+
+## 项目结构图
+
+以下目录结构基于 README 中的说明，并补充了 README 未列出但实际存在于仓库中的文件。
+
+```text
+DigitalLab/
+├── main.js                 # Electron 主进程（窗口、托盘、IPC、Python 子进程管理）
+├── preload.js              # IPC 桥接（暴露 window.digitalLab 安全接口）
+├── dashboard.html          # 主界面 HTML
+├── styles.css              # 全局样式（Emerald 主题体系：深色默认 / 浅色可选）
+├── package.json            # Node 项目配置与 build 配置
+├── requirements.txt        # Python 依赖
+├── backend.spec            # PyInstaller 打包规范
+├── README.md               # 项目说明（简体中文）
+├── README.en-US.md         # 项目说明（英文）
+├── README.ja-JP.md         # 项目说明（日语）
+├── CHANGELOG.md            # 更新日志（英文）
+├── CHANGELOG.zh-CN.md      # 更新日志（中文）
+├── CHANGELOG.ja-JP.md      # 更新日志（日语）
+├── PRIVACY.md              # 隐私政策（多语言）
+├── LICENSE                 # 许可证（ISC）
+├── config.json             # 公开配置
+├── config.schema.json      # 配置校验规则
+├── i18n.js                 # 主进程多语言工具
+├── locales/                # 前端与主进程共用的多语言词典
+│   ├── index.js            # 语言清单与默认语言解析
+│   ├── zh-CN.js            # 简体中文词条
+│   ├── en-US.js            # 英文词条
+│   └── ja-JP.js            # 日语词条
+├── build/                  # 构建资源
+│   ├── icons/              # 应用图标与托盘图标
+│   └── fonts/              # 字体文件
+├── core/                   # Python 后端模块
+│   ├── __init__.py         # 包暴露接口
+│   ├── config.py           # 配置加载与双层存储
+│   ├── config_validator.py # 配置项校验
+│   ├── collector.py        # 双线程系统监控采集
+│   ├── monitor.py          # 性能监控守护进程
+│   ├── hardware.py         # 硬件信息采集
+│   ├── hardware_classifier.py  # 硬件型号分类
+│   ├── ai_client.py        # AI 客户端（Ollama / OpenAI）
+│   ├── ai_memory.py        # AI 本地记忆（JSONL 存储）
+│   ├── chat_store.py       # AI 对话历史存储（JSONL 存储）
+│   ├── nas_monitor.py      # NAS 远程监控（SSH）
+│   ├── logger.py           # 日志系统
+│   ├── system_state.py     # 全局状态管理
+│   ├── event_bus.py        # 事件总线
+│   ├── memory.py           # 对话记忆管理
+│   ├── snapshot.py         # 性能快照存储
+│   ├── renderer.py         # CLI 渲染器
+│   ├── reporter.py         # 图表生成
+│   ├── launcher.py         # 快捷启动器
+│   └── daemon.py           # 守护进程管理
+└── panels/                 # 前端面板（渲染进程按需加载）
+    ├── index.js            # 面板注册表
+    ├── dashboard.js        # 仪表盘
+    ├── device-center.js    # 设备中心
+    ├── ai-assistant.js     # AI 助手
+    ├── terminal.js         # SSH 终端
+    └── settings.js         # 设置面板
+```
+
+## 仓库中存在但 README 结构图未列出的文件
+
+| 文件/目录 | 说明 |
+| --- | --- |
+| `i18n.js` | 主进程侧的多语言 `t()` 实现，与渲染进程共用 `locales/` 下的词典 |
+| `locales/` | 含 `index.js`、`zh-CN.js`、`en-US.js`、`ja-JP.js`，提供三语言支持 |
+| `build/fonts/` | 构建时打入安装包的字体资源目录 |
+| `build/icons/` | 应用图标（`icon.ico`）与托盘图标（`icon_tray.png`） |
+| `backend.spec` | PyInstaller 规范文件，定义如何将 Python 后端打包为 `backend.exe` |
+| `core/__init__.py` | Python 包入口，暴露 `Config`、`get_config` 等符号 |
+| `core/chat_store.py` | AI 对话历史的 JSONL 存储与加载（默认开启，保留 200 条） |
+| `core/config_validator.py` | 基于 schema 的配置项校验与默认值补全 |
+| `core/ai_memory.py` | AI 长期记忆的 JSONL 存储（默认关闭），含 `id`、`tags`、`source` 字段 |
+| `LICENSE` | ISC 许可证 |
+| `PRIVACY.md` | 隐私政策，含简体中文、英文、日语三个版本 |
+
+## 模块关联
+
+- `main.js` 与 `main.py` 的进程间通信细节见 [Electron 与 Python 集成](/digitallab/architecture/electron-python)。
+- `preload.js` 作为 IPC 桥梁，安全地暴露后端能力给渲染进程。
+- `core/system_state.py` 与 `core/event_bus.py` 是状态管理核心，相关内容见 [系统状态与事件管理](/digitallab/architecture/system-state)。
+- 前端面板加载机制见 [模块化面板架构](/digitallab/architecture/panels)。
