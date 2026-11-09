@@ -1,23 +1,52 @@
 ---
 title: "配置与存储"
-description: "DigitalLab 的双层配置存储、config.json 键表以及 UI 偏好与首次运行迁移机制。"
+description: "DigitalLab 的双层配置存储、DPAPI 凭据保护与迁移、config.json 键表、ai.* 配置键以及 UI 偏好文件。"
 sidebarTitle: "配置与存储"
 ---
 
-DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时维护一份独立的 UI 偏好文件。数据与日志的完整文件清单参见 /digitallab/privacy/data-storage。
+DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时维护一份独立的 UI 偏好文件。数据与日志的完整文件清单参见 [数据处理与存储](/digitallab/privacy/data-storage)。
 
-## 双层配置存储
+## 配置文件位置
 
 | 配置文件 | 位置 | 内容 |
 | --- | --- | --- |
-| `config.json` | 随软件分发，运行时复制到 `%APPDATA%\DigitalLab\` | 公开配置：端口、阈值、日志级别、开关 |
-| `user_config.json` | `%APPDATA%\DigitalLab\` | 敏感数据：API Key、Token、NAS 凭据 |
+| `config.json`（运行时） | `%APPDATA%\DigitalLab\config.json` | 公开配置：端口、阈值、日志级别、开关等，首次运行后生成 |
+| `config.json`（模板） | 安装目录 / 仓库根目录 | 随软件分发的默认值；APPDATA 中没有运行时配置时作为回退读取 |
+| `user_config.json` | `%APPDATA%\DigitalLab\user_config.json` | `ai`、`nas_devices`、`auth_token` 三组字段，其中凭据值为 DPAPI 密文 |
+| UI 偏好 `config.json` | `%APPDATA%\digital-lab\config.json` | 主题、语言、开屏动画、引导状态、硬件加速 |
+| `launchers.json` | 安装目录 | 少量本地启动项文件，卸载时随安装目录删除 |
+| `ssh_trust.json` | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` | SSH 主机信任库（主机公钥、算法、指纹、信任时间），不含凭据 |
 
-`core/config.py` 定义了敏感字段集合 `_SENSITIVE_KEYS = {"auth_token", "ai", "nas_devices"}`。`Config.save()` 在写入时会自动过滤这些字段，将其单独保存到 `user_config.json`。
+`Config.load()` 优先读取 `%APPDATA%\DigitalLab\config.json`，不存在时回退到程序目录下的 `config.json`。
 
-### 首次运行迁移
+## 敏感字段分离
 
-`Config.load()` 在 AppData 不存在 `user_config.json` 时，检查分发版 `config.json` 中是否仍包含敏感字段。若存在，则自动将其迁移到 `user_config.json`，实现旧版本平滑过渡。
+`core/config.py` 定义了敏感字段集合 `_SENSITIVE_KEYS = {"auth_token", "ai", "nas_devices"}`。`Config.save()` 写入时会把这三组字段从 `config.json` 中过滤掉，单独保存到 `user_config.json`。
+
+## DPAPI 凭据保护与迁移
+
+从 v1.6.0 起，凭据值使用 Windows DPAPI 当前用户范围加密，以 `dpapi:v1:` 前缀保存。`core/secret_store.py` 加密的字段为：
+
+| 字段 | 说明 |
+| --- | --- |
+| `ai.openai.api_key` | 云端 API Key |
+| `nas_devices[].password` | NAS SSH 密码 |
+| `auth_token` | 旧版字段，当前看起来未使用 |
+
+`ai` 下的其他字段（提供方、地址、模型、记忆与历史设置等）以及 NAS 的名称、主机、端口、用户名仍是可读 JSON。
+
+迁移由 `secret_store.ensure_credentials_ready()` 在运行时读取凭据之前统一完成，`Config.load()` 不再处理敏感字段迁移：
+
+1. 读取 `%APPDATA%\DigitalLab\config.json` 中残留的旧敏感字段与 `user_config.json`。
+2. 将明文凭据加密为 `dpapi:v1:` 密文，先在内存中校验，再原子写入 `user_config.json` 并重新读取验证。
+3. 用户配置安全落盘后，才从旧 `config.json` 中清除敏感字段。
+4. 任一步骤失败时，运行时阻断凭据使用，不会回退为使用明文。
+
+运行时读取凭据只接受 DPAPI 密文，明文值被视为错误。
+
+<Note>
+  `secret_store.get_secret` 的文档字符串中仍保留"既有明文仍可读取"的描述，与运行时实际使用的严格读取函数 `get_runtime_secret` 不一致，以代码行为为准。
+</Note>
 
 ## config.json 配置键表
 
@@ -26,17 +55,17 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 | 键 | 默认值 | 类型 | 范围 | 说明 |
 | --- | --- | --- | --- | --- |
 | `log_level` | `"INFO"` | `string` | `DEBUG` / `INFO` / `WARN` / `ERROR` | 日志级别 |
-| `log_max_days` | `30` | `integer` | 1 - 365 | 日志保留天数 |
-| `log_format` | `"%(asctime)s ..."` | `string` | - | Python logging 格式字符串 |
-| `auto_organize_enabled` | `false` | `boolean` | - | 自动整理开关 |
-| `auto_organize_interval` | `3600` | `integer` | 1 - 86400 | 自动整理间隔（秒） |
-| `dashboard_port` | `8080` | `integer` | 1 - 65535 | Web Dashboard 端口 |
-| `dashboard_host` | `"127.0.0.1"` | `string` | - | Web Dashboard 监听地址 |
-| `monitor_threshold_cpu` | `80` | `integer` | 0 - 100 | CPU 告警阈值（%） |
-| `monitor_threshold_memory` | `85` | `integer` | 0 - 100 | 内存告警阈值（%） |
-| `monitor_threshold_disk` | `90` | `integer` | 0 - 100 | 磁盘告警阈值（%） |
-| `monitor_alert_cooldown` | `300` | `integer` | 1 - 86400 | 告警冷却时间（秒） |
-| `monitor_interval` | `60` | `integer` | 1 - 86400 | 守护采集间隔（秒） |
+| `log_max_days` | `30` | `integer` | 1 至 365 | 日志保留天数 |
+| `log_format` | `"%(asctime)s ..."` | `string` | 无 | Python logging 格式字符串 |
+| `auto_organize_enabled` | `false` | `boolean` | 无 | 自动整理开关 |
+| `auto_organize_interval` | `3600` | `integer` | 1 至 86400 | 自动整理间隔（秒） |
+| `dashboard_port` | `8080` | `integer` | 1 至 65535 | Web Dashboard 端口 |
+| `dashboard_host` | `"127.0.0.1"` | `string` | 无 | Web Dashboard 监听地址 |
+| `monitor_threshold_cpu` | `80` | `integer` | 0 至 100 | CPU 告警阈值（%） |
+| `monitor_threshold_memory` | `85` | `integer` | 0 至 100 | 内存告警阈值（%） |
+| `monitor_threshold_disk` | `90` | `integer` | 0 至 100 | 磁盘告警阈值（%） |
+| `monitor_alert_cooldown` | `300` | `integer` | 1 至 86400 | 告警冷却时间（秒） |
+| `monitor_interval` | `60` | `integer` | 1 至 86400 | 守护采集间隔（秒） |
 
 以下键存在于 `config.json` 模板中，但 `config.schema.json` / `config_validator.py` 的 `_SCHEMA` 中**未定义**它们：
 
@@ -52,6 +81,23 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
   - 若值类型错误，可能影响对应功能的预期行为。
 </Note>
 
+## ai.\* 配置键
+
+`ai` 字段保存在 `user_config.json` 中。以下键在源码中被读取，其中部分只能通过编辑配置文件设置：
+
+| 键 | 说明 | 设置面板入口 |
+| --- | --- | --- |
+| `ai.provider` | 默认提供方（Ollama 或云端 API） | 有 |
+| `ai.ollama.base_url` / `ai.ollama.model` | Ollama 地址与模型 | 有 |
+| `ai.openai.base_url` / `ai.openai.model` | 云端 API 地址与模型 | 有 |
+| `ai.openai.api_key` | 云端 API Key（DPAPI 密文） | 有，只显示已配置状态 |
+| `ai.history.enabled` / `ai.history.limit` / `ai.history.dir` | 对话历史开关、条数上限、目录 | 开关与上限有 |
+| `ai.memory.enabled` / `ai.memory.dir` | AI 记忆开关与目录 | 有，目录通过原生选择器 |
+| `ai.allow_insecure_http` | 允许使用 HTTP 的私网或 Tailscale 地址，按 IP 字面量精确登记 `ip[:port]` | 无 |
+| `ai.ca_bundle` | 自定义 CA Bundle 文件路径；显式配置但缺失或不可读时请求失败 | 无 |
+
+修改提供方、服务地址、API Key、新增的私网 HTTP 例外、CA Bundle 路径或记忆目录时，`main.js` 会弹出系统原生确认框。
+
 ## UI 偏好文件
 
 界面级偏好存储在 `%APPDATA%\digital-lab\config.json`（注意应用名使用 kebab-case `digital-lab`），由 `main.js` 直接读写，不经过 Python 后端。包含以下键：
@@ -64,7 +110,7 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 | `onboarding_done` | 首次启动引导是否已完成 |
 | `hardware_acceleration` | 硬件加速开关（下次启动生效） |
 
-`main.js` 在读取这些文件时自动去除 UTF-8 BOM，避免记事本等工具编辑后 JSON 解析失败。
+`main.js` 在读取这些文件时自动去除 UTF-8 BOM，避免记事本等工具编辑后 JSON 解析失败。`main.js` 启动 Python 后端时还会把 `TEMP` / `TMP` 指向 `%APPDATA%\digital-lab\tmp`。
 
 ## 配置校验
 
@@ -75,4 +121,4 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 3. 若发现缺失、类型错误或越界，自动填充默认值并写回文件，同时在日志中输出校验报告。
 4. 自动生成 `config.schema.json`，与校验规则保持同步。
 
-如需查看本机实际的数据、日志与配置文件清单，请参考 /digitallab/privacy/data-storage。
+如需查看本机实际的数据、日志与配置文件清单，请参考 [数据处理与存储](/digitallab/privacy/data-storage)。

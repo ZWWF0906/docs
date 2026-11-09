@@ -6,7 +6,11 @@ sidebarTitle: "产品概览"
 
 DigitalLab 是一款**个人数字实验室平台**，面向个人设备管理、数据感知与 AI 扩展的桌面应用。本地优先、模块化、可扩展，将你的个人电脑转变为一个可编程、可感知、可对话的数字工作空间。
 
-当前版本为 **v1.5.0**，支持 **Windows 10 及更高版本**。项目源码与发布版本托管在 GitHub，同时提供 Microsoft Store 上架版本。
+本文档以 GitHub 仓库 `main` 分支中的 **v1.6.0** 为基准编写，支持 **Windows 10 及更高版本**。
+
+<Info>
+  **发布渠道变更**：v1.6.0 是最后一个通过 GitHub Releases 提供独立安装包的版本。自 v1.6.1 起，正式版本仅通过 [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) 安装和更新；GitHub 继续作为源码、文档和协作平台。
+</Info>
 
 ## 核心设计原则
 
@@ -15,7 +19,7 @@ DigitalLab 的设计围绕以下四项原则展开：
 - **所有数据进入 system_state，所有 UI 只消费 system_state**：单一数据源，前端与后端解耦
 - **本地优先，模块化，可扩展**：核心功能无需网络，面板按需加载
 - **Electron 核心通信不依赖 HTTP**：采用 JSON Lines IPC 协议，零网络开销；同时提供可选 Web Dashboard 服务
-- **Privacy First**：设备数据默认保存在本地，敏感配置存储于用户目录
+- **Privacy First**：设备数据默认保存在本地，敏感配置存储于用户目录；AI 与 NAS 凭据以当前 Windows 用户的 DPAPI 密文保存，远程 AI 端点要求 HTTPS（详见 [敏感信息处理](/digitallab/privacy/sensitive-information)）
 
 ## 主要功能面板
 
@@ -31,7 +35,7 @@ DigitalLab 由五个模块化面板组成：
   </Card>
 
   <Card title="NAS 与 SSH 终端" icon="terminal" href="/digitallab/user-guide/nas-ssh-terminal">
-    基于 xterm.js 的 SSH 终端，支持多会话管理，远程连接 NAS 设备
+    基于 xterm.js 的 SSH 终端，在独立窗口中远程连接已信任的 NAS 设备
   </Card>
 
   <Card title="AI 助手" icon="bot" href="/digitallab/user-guide/ai-assistant">
@@ -53,9 +57,9 @@ DigitalLab 采用 Electron + Python 混合架构：Electron 主进程负责窗�
 
 ## 获取 DigitalLab
 
-- GitHub 仓库：[https://github.com/ZWWF0906/Digital-Lab](https://github.com/ZWWF0906/Digital-Lab)
-- 发布版本：[https://github.com/ZWWF0906/Digital-Lab/releases](https://github.com/ZWWF0906/Digital-Lab/releases)
-- Microsoft Store：[https://apps.microsoft.com/detail/9n0rtlx1bcp5](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
+- Microsoft Store（v1.6.1 起的正式安装与更新渠道）：[https://apps.microsoft.com/detail/9n0rtlx1bcp5](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
+- GitHub 仓库（源码、文档与协作）：[https://github.com/ZWWF0906/Digital-Lab](https://github.com/ZWWF0906/Digital-Lab)
+- GitHub Releases（v1.6.0 及更早版本的独立安装包）：[https://github.com/ZWWF0906/Digital-Lab/releases](https://github.com/ZWWF0906/Digital-Lab/releases)
 
 ## 下一步
 

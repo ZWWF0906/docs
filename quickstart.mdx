@@ -3,11 +3,11 @@ title: "快速上手"
 description: "从安装到日常使用的首次运行引导，帮助你在几分钟内熟悉 DigitalLab 的核心面板。"
 ---
 
-本指南带你完成 DigitalLab 从安装到首次使用的全过程。基于 v1.5.0 版本的实际功能编写。
+本指南带你完成 DigitalLab 从安装到首次使用的全过程。基于 GitHub `main` 分支中 v1.6.0 的实际功能编写。
 
 ## 准备工作
 
-在开始之前，请确认你的电脑满足 [系统要求](/digitallab/getting-started/system-requirements)，然后从 [安装指南](/digitallab/getting-started/installation) 下载并安装 DigitalLab。
+在开始之前，请确认你的电脑满足 [系统要求](/digitallab/getting-started/system-requirements)，然后按 [安装指南](/digitallab/getting-started/installation) 安装 DigitalLab：v1.6.1 及以后的正式版本通过 Microsoft Store 安装和更新，v1.6.0 是最后一个提供 GitHub 独立安装包的版本。
 
 ## 首次运行
 
@@ -27,10 +27,12 @@ description: "从安装到日常使用的首次运行引导，帮助你在几分
     - **用户名**：SSH 用户名
     - **密码**：SSH 密码
 
-    保存后，应用会尝试连接。你也可以点击"稍后配置"或"我没有 NAS，暂时使用本机监控"跳过此步。
+    保存后，应用会尝试连接。密码会以 Windows DPAPI 密文保存在本机。你也可以点击"稍后配置"或"我没有 NAS，暂时使用本机监控"跳过此步。
   </Step>
   <Step title="检查连接">
-    第三步**检查连接**。应用会测试 NAS 的 SSH 连通性。如果连接通过且设备已在线，引导完成；如果超时，你可以选择重试或跳过，稍后在**设置面板**中重新测试。
+    第三步**检查连接**。应用会测试 NAS 的 SSH 连通性。如果连接通过且设备已在线，引导完成；如果超时或失败，你可以选择重试或跳过，稍后在**设置面板**中重新测试。
+
+    首次连接一台 NAS 时，需要先核对并信任它的 SSH 主机指纹，未信任的主机不会收到认证凭据。如果检查提示主机未信任，请在**设置面板**的 **NAS 设备**分页中核对指纹并点击"我已核对，信任此主机"，详见 [NAS 与 SSH 终端](/digitallab/user-guide/nas-ssh-terminal)。
   </Step>
 </Steps>
 
@@ -64,9 +66,9 @@ description: "从安装到日常使用的首次运行引导，帮助你在几分
 如需使用 AI 助手，请先在**设置面板**的 **AI 配置** 分页中进行以下配置之一：
 
 - **Ollama 本地**：填写本地 Ollama 地址（默认 `http://localhost:11434`）和模型名称（如 `qwen2.5:7b-instruct-q4_K_M`）
-- **云端 API**：填写 OpenAI 兼容 API 的地址、API Key 和模型名称（如 DeepSeek）
+- **云端 API**：填写 OpenAI 兼容 API 的地址、API Key 和模型名称（如 DeepSeek）。远程端点必须使用 `https`；本地 loopback 地址可以使用 `http`
 
-配置完成后，返回 AI 助手面板即可开始对话。AI 会自动注入当前系统状态作为上下文，帮助你回答与 CPU、内存、磁盘、硬件和 NAS 相关的问题。
+修改 AI 提供方、服务地址或 API Key 等敏感配置时，应用会弹出系统原生确认框。配置完成后，返回 AI 助手面板即可开始对话。AI 会自动注入当前系统状态作为上下文，帮助你回答与 CPU、内存、磁盘、硬件和 NAS 相关的问题。
 
 <Info>
   如果你使用云端模型，对话内容与系统状态摘要会随请求发送至你配置的服务端点。如需了解 AI 数据流的完整说明，请参见 [AI 数据流](/digitallab/privacy/ai-data-flow)。
@@ -78,7 +80,7 @@ description: "从安装到日常使用的首次运行引导，帮助你在几分
   SSH 终端目前处于**测试阶段**，首次进入时会弹窗提示。SSH 会话暂不支持自动重连。
 </Warning>
 
-使用 SSH 终端前，请确保 NAS 设备已开启 SSH 服务并已在**设置面板**中正确配置凭据。点击侧边栏的**终端**，选择已在线的 NAS 设备即可建立连接。v1.5.0 起，切换面板或隐藏窗口不会丢失会话。
+使用 SSH 终端前，请确保 NAS 设备已开启 SSH 服务，已在**设置面板**中正确配置凭据，并已信任其主机指纹。点击侧边栏的**终端**，面板会列出已在线的 NAS 设备，点击设备条目上的按钮，确认系统弹出的"打开 SSH 终端？"对话框后，终端会在独立的 "DigitalLab Terminal" 窗口中运行。关闭该窗口会结束 SSH 会话，需要时从终端面板重新打开。
 
 ## 后续操作
 

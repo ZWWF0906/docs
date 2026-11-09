@@ -18,20 +18,28 @@ DigitalLab 的桌面功能由 Electron 主进程承载界面，Python 子进程�
 
 **开发模式**：
 
-- 优先使用项目根目录下的 `backend.exe`（如果存在）。
-- 否则使用系统 `python`，运行 `main.py --json-mode`。
+- 固定使用系统 `python` 运行仓库中的 `main.py --json-mode`，不会启动仓库里可能过期的 `backend.exe`。
 - 工作目录：`__dirname`（项目根目录）。
 
-启动时设置两个环境变量：
+启动时设置以下环境变量（只对本次子进程生效）：
 
+- `TEMP` / `TMP`：指向 `%APPDATA%\digital-lab\tmp`（应用 userData 下的专用临时目录），供 PyInstaller onefile 解压使用，不依赖宿主机的临时目录。
 - `PYTHONUNBUFFERED=1`：禁止 stdout 缓冲，确保 JSON Lines 帧即时发出。
 - `PYTHONIOENCODING=utf-8`：强制 UTF-8 编码，避免中文解码错误。
 
 ```js
+var backendTemp = path.join(app.getPath('userData'), 'tmp');
+var backendEnv = {
+  ...process.env,
+  TEMP: backendTemp,
+  TMP: backendTemp,
+  PYTHONUNBUFFERED: '1',
+  PYTHONIOENCODING: 'utf-8',
+};
 pythonProcess = spawn(pythonPath, args, {
   cwd: cwd,
   stdio: ['pipe', 'pipe', 'pipe'],
-  env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' },
+  env: backendEnv,
 });
 ```
 

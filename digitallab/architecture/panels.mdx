@@ -36,14 +36,18 @@ DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.
 
 ## 加载与生命周期
 
-`dashboard.html` 中的模块脚本负责面板切换逻辑：
+`renderer.js`（由 `dashboard.html` 加载）负责面板切换逻辑：
 
 1. **初始加载**：默认激活 `dashboard` 面板。
 2. **切换面板**：
    - 更新侧栏高亮。
-   - 若目标面板是保活面板（`terminal`），且已有缓存容器，则将其从隐藏容器移回主区并调用 `attach()`，不重新初始化。
+   - 若目标面板是保活面板（`KEEP_ALIVE_PANELS = { terminal: true }`），且已有缓存容器，则将其从隐藏容器移回主区并调用 `attach()`，不重新初始化。
    - 其他面板切换时销毁旧容器并重新调用 `init()`。
-3. **保活机制**：v1.5.0 起 `terminal` 面板启用保活。切换出去时调用 `detach()` 并移入 `#panel-hold` 隐藏容器；切回时调用 `attach()`，不重建 xterm 实例，也不重新建立 SSH 连接。后端为每个会话保留 256 KB 输出环形缓冲，重附着后直接回放。
+3. **保活机制**：v1.5.0 起 `terminal` 面板启用保活，切换出去时调用 `detach()` 并移入 `#panel-hold` 隐藏容器。
+
+<Note>
+  从 v1.6.0 起，主窗口中的 `terminal` 面板不再持有 xterm 实例或 SSH 输入能力，只列出在线 NAS 设备并请求主进程打开独立的 Terminal 窗口。真正的 xterm 与输入处理位于 `terminal.html`、`preload-terminal.js` 与 `renderer-terminal.js` 中；后端为会话保留 256 KB 输出缓冲，终端窗口连接时回放。
+</Note>
 
 ## 状态消费
 
@@ -60,8 +64,8 @@ DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.
 
 以 `terminal.js` 为例：
 
-- 通过 `onTerminalData` 接收终端输出帧。
-- 通过 `onTerminalConnectResult` 处理异步建链结果。
+- 通过 `onStateUpdate` 获取在线 NAS 设备列表（排除 Mock 设备）。
+- 通过 `terminalOpen()` 请求主进程弹出原生确认框并打开独立 Terminal 窗口。
 
 以 `ai-assistant.js` 为例：
 

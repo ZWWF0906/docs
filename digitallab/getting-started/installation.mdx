@@ -1,32 +1,49 @@
 ---
 title: "安装"
-description: "下载并安装 DigitalLab 的发行版本，以及 Microsoft Store 替代渠道和卸载说明。"
+description: "通过 Microsoft Store 或 v1.6.0 GitHub 安装包安装 DigitalLab，以及更新与卸载说明。"
 sidebarTitle: "安装"
 ---
 
-DigitalLab 提供两种获取方式：GitHub Releases 下载安装程序，以及 Microsoft Store 上架版本。以下说明面向最终用户；开发者如需从源码构建，请参见 [构建与打包](/digitallab/development/build-and-packaging)。
+DigitalLab 的发布渠道在 v1.6.0 之后发生了变化。以下说明面向最终用户；开发者如需从源码构建，请参见 [构建与打包](/digitallab/development/build-and-packaging)。
 
-## 通过 GitHub Releases 安装
+| 版本 | 安装与更新渠道 |
+| --- | --- |
+| v1.6.1 及以后 | 仅通过 [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) 安装和更新 |
+| v1.6.0 | 最后一个提供 GitHub 独立安装包的版本，从 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) 下载 `DigitalLab Setup.exe` |
+
+GitHub 不再为 v1.6.1 及以后的版本提供独立安装包，仓库继续作为源码、文档和协作平台。
+
+## 通过 Microsoft Store 安装
+
+<Steps>
+  <Step title="打开商店页面">
+    访问 [Microsoft Store - DigitalLab](https://apps.microsoft.com/detail/9n0rtlx1bcp5)，或在 Microsoft Store 中搜索 DigitalLab。
+  </Step>
+  <Step title="安装">
+    在商店页面中安装。后续的正式版本更新同样通过 Microsoft Store 获取。
+  </Step>
+  <Step title="完成初始设置">
+    启动应用后，按首次启动引导完成设置，或在**设置面板**的 NAS 设备分页中添加 NAS 连接信息。参见 [快速开始](/quickstart)。
+  </Step>
+</Steps>
+
+## 通过 GitHub 安装包安装 v1.6.0
 
 <Steps>
   <Step title="下载安装包">
-    前往 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) 页面，下载最新的 `DigitalLab Setup.exe`。
+    前往 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases)，下载 v1.6.0 的 `DigitalLab Setup.exe`。
   </Step>
   <Step title="运行安装程序">
-    运行下载的安装程序。安装过程中**可以更改安装目录**（`allowToChangeInstallationDirectory: true`，非一键安装）。
+    安装程序需要**管理员权限**，并安装到 per-machine（所有用户）目录。安装过程中可以更改安装目录（非一键安装）。
   </Step>
   <Step title="配置 NAS 设备">
     启动应用后，打开**设置面板**，在 NAS 设备分页中添加你的 NAS 连接信息。
   </Step>
 </Steps>
 
-## 通过 Microsoft Store 安装
-
-README 提供了 Microsoft Store 上架链接作为替代安装渠道：
-
-[Microsoft Store - DigitalLab](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
-
-你可以选择从 Microsoft Store 直接安装，安装后配置方式与上述相同。
+<Note>
+  GitHub 安装包不会再收到 v1.6.1 及以后的正式版本。如需继续获取更新，请改用 Microsoft Store 渠道。
+</Note>
 
 ## 无需额外依赖
 
@@ -37,7 +54,8 @@ README 提供了 Microsoft Store 上架链接作为替代安装渠道：
 卸载 DigitalLab 时需要注意以下数据残留：
 
 - 卸载程序**不会自动删除** `%APPDATA%\DigitalLab\` 和 `%APPDATA%\digital-lab\` 两个目录
-- 这两个目录分别保存了应用配置、监控数据、AI 对话历史以及界面偏好设置
-- 如需彻底清理数据，请在卸载后手动删除上述目录
+- 这两个目录保存了应用配置、受保护的凭据、监控数据、AI 对话历史、AI 记忆以及界面偏好设置
+- 程序目录中的 `launchers.json`（快捷启动器配置）会随安装目录一起被卸载程序移除
+- 如需彻底清理数据，请在卸载后手动删除上述两个 `%APPDATA%` 目录
 
 详情请参见 [数据处理与存储](/digitallab/privacy/data-storage)。

@@ -10,16 +10,16 @@ DigitalLab 采用 Electron + Python 的混合桌面架构，兼顾前端富交�
 
 ```text
 ┌──────────────────────────────────────┐
-│  Electron 主进程（main.js）           │
-│  窗口管理 · 系统托盘 · IPC 通信        │
-│         │ spawn                      │
-│         ▼                            │
-│  Python 子进程（main.py）             │
-│  监控采集 · 硬件检测 · NAS SSH · AI   │
-│         │                            │
-│  stdin/stdout JSON Lines 协议        │
-│  请求-响应：requestId 匹配            │
-│  状态更新：广播模式                    │
+│  Electron 主进程（main.js）                │
+│  窗口管理 · 系统托盘 · IPC 通信              │
+│         │ spawn                                │
+│         ▼                                      │
+│  Python 子进程（main.py）                   │
+│  监控采集 · 硬件检测 · NAS SSH · AI         │
+│         │                                        │
+│  stdin/stdout JSON Lines 协议             │
+│  请求-响应：requestId 匹配                   │
+│  状态更新：广播模式                             │
 └──────────────────────────────────────┘
 ```
 
