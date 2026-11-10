@@ -1,35 +1,86 @@
 ---
 title: "敏感信息处理"
-description: "DigitalLab 对 API Key、NAS SSH 凭据等敏感信息的存储、传输与保护方式。"
+description: "DigitalLab 对 API Key、NAS SSH 密码等敏感信息的存储、传输与保护方式，包括 DPAPI 加密、AI 端点传输策略与 SSH 主机信任。"
 ---
 
-本页说明 DigitalLab 如何识别、存储和保护敏感信息，以及你可以采取的实际建议。
+本页说明 DigitalLab 如何识别、存储和保护敏感信息，以及你可以采取的实际建议。内容依据 v1.6.0 代码整理。
 
 ## 敏感信息保护
 
-以下信息视为敏感数据，存储在 `%APPDATA%\DigitalLab\user_config.json`，与公共配置 `config.json` 分离，也不包含在安装包中：
+以下信息视为敏感数据，存储在 `%APPDATA%\DigitalLab\user_config.json`，与公共配置 `config.json` 分离，也不包含在安装包中。
 
 ### AI 服务 API Key
 
 - **用途**：用于向你所配置的 AI 端点进行身份认证。
-- **传输方式**：以 HTTP 请求头（`Authorization: Bearer`）形式随请求发送。
-- **不写入的位置**：不会写入提示词、系统消息或对话正文。
-- **加密与协议**：传输是否加密取决于你配置的 `base_url`，应用未强制 HTTPS，请使用 `https` 端点并自行确认其安全性。
+- **传输方式**：只以 HTTP 请求头 `Authorization: Bearer` 随请求发送给你配置的端点。
+- **不写入的位置**：不写入请求正文（JSON body）、提示词、系统消息或对话内容，因此不属于模型可见的请求内容。
+- **重定向**：AI 请求不跟随 HTTP 重定向，认证头不会被转发到其他地址。
+- **传输加密**：远程端点必须使用 HTTPS，见下文 [AI 端点传输策略](#ai-端点传输策略)。
 
-### NAS 设备 SSH 凭据（用户名、密码）
+### NAS 设备 SSH 密码
 
 - **用途**：仅用于通过 SSH 连接你配置的 NAS，用于采集监控数据与建立终端会话。
 - **不进入的范围**：不随 AI 请求发送，也不进入 AI 请求上下文（上下文只含 NAS 名称、在线状态与负载指标）。
+- **未加密的 NAS 字段**：NAS 的名称、主机地址、端口与用户名不属于加密字段，以可读 JSON 保存在 `user_config.json` 中。
 
 ### 认证 Token
 
-`user_config.json` 中可能出现该字段（早期版本写入），当前版本未发现实际使用；如存在可手动删除该字段。
+`user_config.json` 中可能出现 `auth_token` 字段（早期版本写入），当前版本未发现实际使用；如存在可手动删除该字段。
 
-### 本地 IPC 与明文存储的补充说明
+## 凭据加密（DPAPI）
 
-这些凭据会通过本机 IPC 传给应用自身的渲染进程，以便设置界面显示与编辑（输入框以密码类型掩码显示）；这是本机进程间传递，不是远程传输。
+v1.6.0 起，以下三个字段的值使用 Windows DPAPI 当前用户范围加密，保存为带 `dpapi:v1:` 前缀的密文：
 
-凭据以明文形式保存在 `user_config.json` 中（未加密），请按敏感文件保管、不要分享。
+| 字段 | 内容 |
+| --- | --- |
+| `ai.openai.api_key` | OpenAI 兼容 API 的 API Key |
+| `nas_devices[].password` | 每台 NAS 的 SSH 密码 |
+| `auth_token` | 早期版本遗留的认证 Token |
+
+`user_config.json` 中的其他内容（AI 提供方、服务地址、模型名、记忆与历史设置，以及 NAS 名称、主机、端口、用户名）仍以可读 JSON 保存。
+
+### 启动时迁移
+
+- 应用启动时会检查凭据字段。旧版本留下的明文凭据会在内存中加密并校验，然后原子写回 `user_config.json` 并重新读取验证。
+- 旧版 `%APPDATA%\DigitalLab\config.json` 中残留的敏感字段，会在 `user_config.json` 缺少对应字段时迁移过去；验证成功后才从旧文件中清理。
+- 迁移或校验任一步失败时，应用拒绝使用未受保护的凭据，不会静默回退为使用明文。
+
+### 设置界面中的显示
+
+- 设置界面只接收"已配置/掩码"状态，不会收到凭据明文或密文。
+- 已保存的 API Key 显示为"已配置（输入新值可替换）"，可点击**清除密钥**删除；NAS 密码同理，可清除已保存的密码。
+- 清除凭据、修改 AI 服务地址或修改 NAS 主机等敏感操作会弹出系统确认框。
+
+<Warning>
+  DPAPI 保护绑定当前 Windows 用户：它能防止其他 Windows 用户读取或在其他机器上解密，但以同一用户身份运行的程序原则上也能调用 DPAPI 解密。`user_config.json` 仍是敏感文件，请妥善保管、不要分享。
+</Warning>
+
+## AI 端点传输策略
+
+AI 请求（Ollama 与 OpenAI 兼容 API）发出前，应用按以下规则检查你配置的服务地址：
+
+| 目标地址 | 规则 |
+| --- | --- |
+| 远程 HTTPS | 允许。使用默认 TLS 证书校验，应用不提供关闭校验的开关 |
+| loopback HTTP：`127.0.0.0/8`、`::1`、`localhost` | 允许。`localhost` 须全部解析为回环地址，连接时固定到解析出的 IP，并绕过系统代理 |
+| 私网 HTTP：`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`、`fc00::/7` | 默认拒绝；在 `ai.allow_insecure_http` 中按 IP 与端口精确登记后允许 |
+| Tailscale HTTP：`100.64.0.0/10`、`fd7a:115c:a1e0::/48` | 同私网规则 |
+| 域名形式的 HTTP | 拒绝 |
+| 公网 IP 的 HTTP | 拒绝 |
+| link-local（`169.254.0.0/16`、`fe80::/10`）与云元数据地址的 HTTP | 拒绝 |
+
+补充说明：
+
+- **HTTP 授权方式**：`ai.allow_insecure_http` 中的每一项必须是 IP 字面量形式的 `ip[:port]`，不带协议前缀，省略端口时按 80 处理；只允许私网或 Tailscale 地址，域名与其他类别会被拒绝。当前设置界面不提供该入口，需要直接编辑配置；新增登记时会弹出系统确认框。
+- **授权后的 HTTP 仍是明文传输**：精确授权只是允许连接，不会为该连接加密。
+- **自定义 CA**：配置项 `ai.ca_bundle` 可指定自定义 CA 证书文件；显式配置后，文件缺失或不可读时请求失败，不会退回系统信任。当前设置界面同样不提供该入口。
+- **重定向**：所有 AI 请求都不跟随 HTTP 重定向。
+
+## NAS 连接
+
+- 应用通过 SSH 连接你在设备中心填写的主机地址与端口，不限制目标必须位于局域网。数据经过的网络路径取决于该地址和你的网络环境（例如局域网、VPN 或 Tailscale）。
+- 首次连接新主机时，应用会显示主机密钥指纹，需要你核对后点击"我已核对，信任此主机"；信任记录保存在 `%APPDATA%\DigitalLab\ssh\ssh_trust.json`（只含主机公钥与指纹，不含凭据）。
+- 已信任主机的密钥发生变化时，连接会被拒绝。
 
 ## 双层配置存储
 
@@ -37,18 +88,18 @@ DigitalLab 采用双层配置存储，将公开设置与敏感数据分离：
 
 | 配置文件 | 位置 | 内容 |
 | --- | --- | --- |
-| `config.json` | 随软件分发 | 公开配置：端口、阈值、日志级别、开关等 |
-| `user_config.json` | `%APPDATA%\DigitalLab\` | 敏感数据：API Key、Token、NAS 凭据 |
+| `config.json` | `%APPDATA%\DigitalLab\`（运行时）；程序目录中的同名文件作为模板，在运行时文件不存在时回退读取 | 公开配置：端口、阈值、日志级别、开关等 |
+| `user_config.json` | `%APPDATA%\DigitalLab\` | 敏感配置：`ai` 与 `nas_devices` 整个配置段及 `auth_token`；其中的凭据值为 DPAPI 密文 |
 
-首次运行时，若 `config.json` 中存在敏感字段且 `user_config.json` 不存在，系统会自动迁移敏感数据到用户目录。
+`config.json` 保存时会过滤敏感字段，不会写入 `ai`、`nas_devices` 或 `auth_token`。
 
 配置项的具体含义与默认值请见 [配置与存储](/digitallab/architecture/configuration-storage)。
 
 ## 实际建议
 
-以下建议均来自源文档，请你参考执行：
-
-- 使用 `https` 端点接入云端 AI 模型，并自行确认服务端安全性。
-- 不要分享 `user_config.json` 文件。
+- 接入云端 AI 模型时使用 `https` 端点；只在确有需要时为私网或 Tailscale 地址登记 HTTP 授权，并了解该连接不加密。
+- 不要分享 `user_config.json`，也不要把它复制到他人可访问的位置。
+- 监控日志与界面日志可能包含 NAS 名称、主机地址和异常信息，分享日志前请先检查内容，详见 [数据处理与存储](/digitallab/privacy/data-storage#日志)。
+- 首次信任 NAS 主机时，请与设备上实际的主机密钥指纹核对。
 - 不要在对话或配置中输入你不希望发送给云服务商的敏感信息。
-- 如果 `user_config.json` 中存在认证 Token 字段且当前版本未使用，可手动删除该字段。
+- 如果 `user_config.json` 中存在 `auth_token` 字段，可手动删除。
