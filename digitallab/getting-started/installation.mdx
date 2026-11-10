@@ -9,7 +9,7 @@ DigitalLab 的发布渠道在 v1.6.0 之后发生了变化。以下说明面向�
 | 版本 | 安装与更新渠道 |
 | --- | --- |
 | v1.6.1 及以后 | 仅通过 [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) 安装和更新 |
-| v1.6.0 | 最后一个提供 GitHub 独立安装包的版本，从 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) 下载 `DigitalLab Setup.exe` |
+| v1.6.0及更早版本 | 最后一个提供 GitHub 独立安装包的版本，从 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) 下载 `DigitalLab Setup 1.6.0.exe` |
 
 GitHub 不再为 v1.6.1 及以后的版本提供独立安装包，仓库继续作为源码、文档和协作平台。
 
@@ -31,7 +31,7 @@ GitHub 不再为 v1.6.1 及以后的版本提供独立安装包，仓库继续�
 
 <Steps>
   <Step title="下载安装包">
-    前往 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases)，下载 v1.6.0 的 `DigitalLab Setup.exe`。
+    前往 [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases)，下载 v1.6.0 的 `DigitalLab Setup 1.6.0.exe`。
   </Step>
   <Step title="运行安装程序">
     安装程序需要**管理员权限**，并安装到 per-machine（所有用户）目录。安装过程中可以更改安装目录（非一键安装）。
@@ -55,7 +55,7 @@ GitHub 不再为 v1.6.1 及以后的版本提供独立安装包，仓库继续�
 
 - 卸载程序**不会自动删除** `%APPDATA%\DigitalLab\` 和 `%APPDATA%\digital-lab\` 两个目录
 - 这两个目录保存了应用配置、受保护的凭据、监控数据、AI 对话历史、AI 记忆以及界面偏好设置
-- 程序目录中的 `launchers.json`（快捷启动器配置）会随安装目录一起被卸载程序移除
+- 程序目录中的 `launchers.json`（快捷启动器配置）由应用运行时写入，卸载程序是否会删除它尚未验证；卸载后请检查原安装目录，如有残留可手动删除
 - 如需彻底清理数据，请在卸载后手动删除上述两个 `%APPDATA%` 目录
 
 详情请参见 [数据处理与存储](/digitallab/privacy/data-storage)。

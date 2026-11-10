@@ -1,23 +1,54 @@
 ---
 title: "配置与存储"
-description: "DigitalLab 的双层配置存储、DPAPI 凭据保护与迁移、config.json 键表、ai.* 配置键以及 UI 偏好文件。"
+description: "DigitalLab 的双层配置存储、DPAPI 凭据保护与迁移、config.json 键表、ai.* 配置键、运行时数据位置以及 UI 偏好文件。"
 sidebarTitle: "配置与存储"
 ---
 
-DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时维护一份独立的 UI 偏好文件。数据与日志的完整文件清单参见 [数据处理与存储](/digitallab/privacy/data-storage)。
+DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时维护一份独立的 UI 偏好文件。本页内容依据 v1.6.0 代码整理；数据与日志的完整文件清单参见 [数据处理与存储](/digitallab/privacy/data-storage)。
 
 ## 配置文件位置
 
 | 配置文件 | 位置 | 内容 |
 | --- | --- | --- |
-| `config.json`（运行时） | `%APPDATA%\DigitalLab\config.json` | 公开配置：端口、阈值、日志级别、开关等，首次运行后生成 |
-| `config.json`（模板） | 安装目录 / 仓库根目录 | 随软件分发的默认值；APPDATA 中没有运行时配置时作为回退读取 |
+| `config.json`（运行时） | `%APPDATA%\DigitalLab\config.json` | 公开配置：端口、阈值、日志级别、开关等。文件不存在时，由以下任一操作创建，之后每次执行都会整体覆盖写入：GUI 设置保存（后端以 `_atomic_write_json` 写入，`main.py` 第 1638 行）；CLI 的 `init` 或 `config` 命令（调用 `Config.save()`，`main.py` 第 127、196 行） |
+| `config.json`（模板） | 程序目录（安装后为安装目录，开发模式为仓库根目录） | 仓库根目录中的默认值模板；APPDATA 中没有运行时配置时作为回退读取。按 `package.json` 的打包配置（`build.files`、`extraResources`），该文件未被打入安装包，打包后回退时文件不存在，直接使用代码中的默认值 |
 | `user_config.json` | `%APPDATA%\DigitalLab\user_config.json` | `ai`、`nas_devices`、`auth_token` 三组字段，其中凭据值为 DPAPI 密文 |
 | UI 偏好 `config.json` | `%APPDATA%\digital-lab\config.json` | 主题、语言、开屏动画、引导状态、硬件加速 |
-| `launchers.json` | 安装目录 | 少量本地启动项文件，卸载时随安装目录删除 |
+| `launchers.json` | 程序目录 | 快捷启动器配置，由应用运行时写入。程序目录在按机器安装或 Store 安装下是否可写、卸载时是否会被清理，均尚未验证 |
 | `ssh_trust.json` | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` | SSH 主机信任库（主机公钥、算法、指纹、信任时间），不含凭据 |
 
-`Config.load()` 优先读取 `%APPDATA%\DigitalLab\config.json`，不存在时回退到程序目录下的 `config.json`。
+`Config.load()` 优先读取 `%APPDATA%\DigitalLab\config.json`，不存在时回退到程序目录下的 `config.json`，再用 `user_config.json` 的内容覆盖。无论从哪里读取，保存时一律写入 `%APPDATA%\DigitalLab\config.json`，不会写回程序目录的模板。
+
+## 运行时数据位置
+
+除配置文件外，应用运行时还会写入以下数据，全部位于用户目录：
+
+| 数据 | 位置 |
+| --- | --- |
+| 按日性能汇总 | `%APPDATA%\DigitalLab\memory\daily.jsonl` |
+| AI 对话历史 | 默认 `%APPDATA%\DigitalLab\memory\chat_history.jsonl` |
+| AI 长期记忆 | 默认 `%APPDATA%\DigitalLab\memory\ai_memory.jsonl` |
+| 性能快照 | `%APPDATA%\DigitalLab\snapshots\` |
+| 报告 | `%APPDATA%\DigitalLab\reports\` |
+| 快照数据库、监控日志、守护进程 PID | `%APPDATA%\DigitalLab\logs\monitor\` 下的 `monitor.db`、`daemon.log`、`daemon.pid` |
+| 硬件信息缓存 | `%APPDATA%\DigitalLab\logs\cache\hardware.json` |
+| SSH 主机信任库 | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` |
+| Electron 界面日志 | `%APPDATA%\digital-lab\digital-lab.log`（轮转保留 `.1` 至 `.3`） |
+| 后端临时目录 | `%APPDATA%\digital-lab\tmp\` |
+
+`main.js` 启动 Python 后端时把子进程的 `TEMP` / `TMP` 指向 `%APPDATA%\digital-lab\tmp`，不依赖系统临时目录。
+
+对话历史与 AI 记忆的目录可以修改，生效顺序为：环境变量、配置项、默认目录。
+
+| 功能 | 环境变量 | 配置项 | 默认 |
+| --- | --- | --- | --- |
+| 对话历史开关 | `DIGITAL_LAB_CHAT_HISTORY_ENABLED` | `ai.history.enabled` | 开启 |
+| 对话历史上限 | `DIGITAL_LAB_CHAT_HISTORY_LIMIT` | `ai.history.limit` | 200（限制在 20 至 5000） |
+| 对话历史目录 | `DIGITAL_LAB_CHAT_HISTORY_DIR` | `ai.history.dir` | `%APPDATA%\DigitalLab\memory` |
+| AI 记忆开关 | `DIGITAL_LAB_AI_MEMORY_ENABLED` | `ai.memory.enabled` | 关闭 |
+| AI 记忆目录 | `DIGITAL_LAB_AI_MEMORY_DIR` | `ai.memory.dir` | `%APPDATA%\DigitalLab\memory` |
+
+目录值需要通过本地路径策略校验（拒绝 UNC 路径、设备命名空间、路径穿越、符号链接等），不通过时回退到默认目录。`daily.jsonl` 的位置固定，不受这些设置影响。
 
 ## 敏感字段分离
 
@@ -45,7 +76,7 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 运行时读取凭据只接受 DPAPI 密文，明文值被视为错误。
 
 <Note>
-  `secret_store.get_secret` 的文档字符串中仍保留"既有明文仍可读取"的描述，与运行时实际使用的严格读取函数 `get_runtime_secret` 不一致，以代码行为为准。
+  `secret_store.get_secret()` 函数本身仍接受明文：输入为 DPAPI 密文时解密，否则原样返回明文（其文档字符串"允许读取历史明文"与函数行为一致）。实际运行时的凭据读取不经过它：AI API Key（`core/ai_client.py`）与 NAS 密码（`core/nas_monitor.py`、`main.py` 的 `_get_nas_devices()`）都调用 `get_runtime_secret()`，只接受 DPAPI 密文。当前代码中没有 `get_secret()` 的调用方；若日后新代码改用它，明文凭据会被接受。
 </Note>
 
 ## config.json 配置键表
@@ -69,16 +100,13 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 
 以下键存在于 `config.json` 模板中，但 `config.schema.json` / `config_validator.py` 的 `_SCHEMA` 中**未定义**它们：
 
-| 键 | 默认值 | 说明 |
+| 键 | 模板值 | 说明 |
 | --- | --- | --- |
-| `hardware_acceleration` | `false` | 硬件加速开关，由 `main.js` 在启动时直接读取 |
-| `nas_mock_enabled` | `true` | NAS Mock 设备开关，控制是否生成模拟 NAS 数据 |
+| `hardware_acceleration` | `false` | 模板中保留的旧键。`main.js` 实际读取的是 UI 偏好文件中的同名键（见[UI 偏好文件](#ui-偏好文件)），不读取这里的值 |
+| `nas_mock_enabled` | `true` | NAS Mock 设备开关，控制是否生成模拟 NAS 数据；代码在该键缺失时按 `false` 处理，设置中有对应开关 |
 
 <Note>
-  `hardware_acceleration` 与 `nas_mock_enabled` 是 `config.json` 中的实际键，但配置校验器未校验它们。这意味着：
-
-  - 它们的值不会被校验器修复或截断；
-  - 若值类型错误，可能影响对应功能的预期行为。
+  这两个键不在校验器的 `_SCHEMA` 中，因此它们的值不会被校验器修复或截断；若值类型错误，可能影响对应功能的预期行为。设置中可写的 `nas_interval` 同样不在 `_SCHEMA` 中。
 </Note>
 
 ## ai.\* 配置键
@@ -88,19 +116,38 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 | 键 | 说明 | 设置面板入口 |
 | --- | --- | --- |
 | `ai.provider` | 默认提供方（Ollama 或云端 API） | 有 |
-| `ai.ollama.base_url` / `ai.ollama.model` | Ollama 地址与模型 | 有 |
-| `ai.openai.base_url` / `ai.openai.model` | 云端 API 地址与模型 | 有 |
+| `ai.ollama.base_url` / `ai.ollama.model` | Ollama 地址与模型，默认 `http://localhost:11434` 与 `llama3` | 有 |
+| `ai.openai.base_url` / `ai.openai.model` | 云端 API 地址与模型，默认 `https://api.deepseek.com` 与 `deepseek-chat` | 有 |
 | `ai.openai.api_key` | 云端 API Key（DPAPI 密文） | 有，只显示已配置状态 |
-| `ai.history.enabled` / `ai.history.limit` / `ai.history.dir` | 对话历史开关、条数上限、目录 | 开关与上限有 |
+| `ai.history.enabled` / `ai.history.limit` / `ai.history.dir` | 对话历史开关、条数上限、目录 | 开关与上限有，目录无 |
 | `ai.memory.enabled` / `ai.memory.dir` | AI 记忆开关与目录 | 有，目录通过原生选择器 |
-| `ai.allow_insecure_http` | 允许使用 HTTP 的私网或 Tailscale 地址，按 IP 字面量精确登记 `ip[:port]` | 无 |
+| `ai.allow_insecure_http` | 允许使用 HTTP 的私网或 Tailscale 地址清单 | 无 |
 | `ai.ca_bundle` | 自定义 CA Bundle 文件路径；显式配置但缺失或不可读时请求失败 | 无 |
 
-修改提供方、服务地址、API Key、新增的私网 HTTP 例外、CA Bundle 路径或记忆目录时，`main.js` 会弹出系统原生确认框。
+保存设置时，如果提供方、服务地址、API Key、CA Bundle 路径或记忆目录发生变化，或新增了 `ai.allow_insecure_http` 条目，`main.js` 会弹出系统原生确认框列出这些变更（API Key 只提示将更新为新值，不在对话框中显示值）。
+
+### 私网 HTTP 精确授权
+
+AI 服务地址默认只允许 HTTPS 与 loopback HTTP（`127.0.0.0/8`、`::1`，以及只解析到 loopback 的 `localhost`）。私网或 Tailscale 地址上的 HTTP 服务需要在 `ai.allow_insecure_http` 中逐条登记：
+
+```json
+{
+  "ai": {
+    "allow_insecure_http": ["192.168.1.20:11434"]
+  }
+}
+```
+
+- 每条是 `ip[:port]` 形式的 IP 字面量，不含协议和路径；省略端口时按 `80` 匹配。
+- 只匹配完全相同的 IP 与端口，不支持网段、通配符或域名。
+- 只对私网（`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`、`fc00::/7`）与 Tailscale（`100.64.0.0/10`、`fd7a:115c:a1e0::/48`）地址生效。域名、公网 IP、link-local 地址与云元数据地址的 HTTP 即使登记也会被拒绝。
+- 授权后的 HTTP 请求仍是明文传输。
+
+完整策略见 [AI 端点传输策略](/digitallab/privacy/sensitive-information#ai-端点传输策略)。
 
 ## UI 偏好文件
 
-界面级偏好存储在 `%APPDATA%\digital-lab\config.json`（注意应用名使用 kebab-case `digital-lab`），由 `main.js` 直接读写，不经过 Python 后端。包含以下键：
+界面级偏好存储在 `%APPDATA%\digital-lab\config.json`（注意目录名使用 kebab-case `digital-lab`，即 Electron 的 userData 目录），由 `main.js` 直接读写，不经过 Python 后端。包含以下键：
 
 | 键 | 说明 |
 | --- | --- |
@@ -110,15 +157,17 @@ DigitalLab 通过双层配置存储将公开设置与敏感数据分离，同时
 | `onboarding_done` | 首次启动引导是否已完成 |
 | `hardware_acceleration` | 硬件加速开关（下次启动生效） |
 
-`main.js` 在读取这些文件时自动去除 UTF-8 BOM，避免记事本等工具编辑后 JSON 解析失败。`main.js` 启动 Python 后端时还会把 `TEMP` / `TMP` 指向 `%APPDATA%\digital-lab\tmp`。
+`hardware_acceleration` 的判定规则：该文件不存在时硬件加速关闭（兼容虚拟机）；文件存在时，只有该键明确为 `false` 才关闭，键缺失也视为开启。
+
+`main.js` 在读取这些文件时自动去除 UTF-8 BOM，避免记事本等工具编辑后 JSON 解析失败。
 
 ## 配置校验
 
-`core/config_validator.py` 在应用启动时运行：
+`core/config_validator.py` 在 Python 后端启动时运行，校验对象是**程序目录**下的 `config.json` 模板，而不是 `%APPDATA%\DigitalLab\config.json`：
 
-1. 读取 `config.json`。
+1. 读取程序目录下的 `config.json`。
 2. 对 `_SCHEMA` 中的每个字段进行类型转换、范围截断与枚举校验。
-3. 若发现缺失、类型错误或越界，自动填充默认值并写回文件，同时在日志中输出校验报告。
-4. 自动生成 `config.schema.json`，与校验规则保持同步。
+3. 若发现缺失、类型错误或越界，自动填充默认值并写回该文件，保留 `_SCHEMA` 之外的字段，同时输出校验报告。
+4. 在同一目录生成 `config.schema.json`，与校验规则保持同步。
 
 如需查看本机实际的数据、日志与配置文件清单，请参考 [数据处理与存储](/digitallab/privacy/data-storage)。

@@ -23,7 +23,7 @@ DigitalLab 以本地运行为主：硬件与性能数据在本机采集、在本
 
 - **凭据**：API Key、NAS 密码等凭据值使用 Windows DPAPI 当前用户范围加密保存，详见 [敏感信息处理](/digitallab/privacy/sensitive-information)。
 - **传输**：远程 AI 端点必须使用 HTTPS 并保留默认证书校验；HTTP 只允许 loopback 地址，以及你按 IP 与端口精确授权的私网或 Tailscale 地址。
-- **日志**：日志不包含 AI 对话内容与请求上下文；日志系统本身不做通用字段脱敏，只有 AI 请求错误摘要会做有限脱敏，详见 [数据处理与存储](/digitallab/privacy/data-storage#日志)。
+- **日志**：日志不包含 AI 对话内容与请求上下文；日志系统本身不做通用字段脱敏。AI 请求失败时，界面上显示的错误摘要会做有限脱敏（去除 URL 并替换凭据类键值）；这是界面错误提示的处理，不是日志脱敏，也不代表日志中的内容经过脱敏。详见 [数据处理与存储](/digitallab/privacy/data-storage#日志)。
 
 ## 收集的信息
 

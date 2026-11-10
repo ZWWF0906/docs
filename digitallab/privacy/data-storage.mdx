@@ -3,7 +3,7 @@ title: "数据处理与存储"
 description: "DigitalLab 采集的硬件、性能与 NAS 数据的存储位置、日志内容、以及数据删除方法。"
 ---
 
-本页说明 DigitalLab 在本机采集的数据类别、存储目录结构、日志内容以及删除方式。所有数据默认写入本机用户可写目录，不上传至远程服务器。
+本页说明 DigitalLab 在本机采集的数据类别、存储目录结构、日志内容以及删除方式。内容依据 v1.6.0 代码整理。采集的数据默认写入本机用户可写目录，应用不会把这些文件上传至远程服务器。
 
 ## 收集的信息（硬件与性能）
 
@@ -11,52 +11,71 @@ DigitalLab 在本机采集以下信息，用于仪表盘展示、本地分析与
 
 1. **本机硬件信息**：CPU 型号与频率、内存容量与类型、GPU 型号与显存、磁盘型号与容量、显示器规格、网络适配器信息、系统型号与制造商。
 2. **系统性能数据**：CPU 使用率、内存占用率、磁盘使用率、网络速度、进程列表（PID、名称、CPU 和内存占用）。
-3. **NAS 设备数据**：你主动配置的 NAS 设备的 CPU、内存、磁盘、Docker 容器状态（通过 SSH 连接采集，数据存储在本机）。
+3. **NAS 设备数据**：你主动配置的 NAS 设备的 CPU、内存、磁盘、Docker 容器状态。应用通过 SSH 连接你填写的主机地址与端口进行采集，不限制目标必须位于局域网；采集结果存储在本机。
 
 ## 数据存储位置
 
-数据存储在用户可写目录，主要位置如下：
+运行数据存储在两个用户目录中：
 
 ```text
 %APPDATA%\DigitalLab\
-├── config.json               # 公共配置
-├── user_config.json           # 敏感配置（AI 配置与 API Key、NAS 设备与凭据、认证 Token 字段）
-├── logs/
-│   ├── cache/
+├── config.json                # 运行时公共配置
+├── user_config.json           # 敏感配置；凭据值为 DPAPI 密文（dpapi:v1:）
+├── logs\
+│   ├── cache\
 │   │   └── hardware.json      # 硬件信息缓存
-│   └── monitor/
+│   └── monitor\
 │       ├── monitor.db         # 性能快照数据库（SQLite）
-│       ├── daemon.log         # 监控日志
+│       ├── daemon.log         # 监控日志（JSON Lines）
 │       └── daemon.pid         # 监控守护进程 PID
-├── memory/
+├── memory\
+│   ├── daily.jsonl            # 按日性能汇总
 │   ├── chat_history.jsonl     # AI 对话历史（默认开启，可设上限或清空）
 │   └── ai_memory.jsonl        # AI 长期记忆（默认关闭，开启后生成）
-└── tools/ experiments/ notes/ archive/ interface/   # 预留目录（当前版本未实际写入业务数据）
+├── snapshots\                 # 性能快照
+├── reports\                   # 报告
+├── ssh\
+│   └── ssh_trust.json         # SSH 主机信任库（主机公钥与指纹，不含凭据）
+└── tools\ experiments\ notes\ archive\ interface\   # 预留目录
 
 %APPDATA%\digital-lab\
-└── config.json                # 界面偏好（主题、语言、开屏动画开关、引导完成状态）
+├── config.json                # 界面偏好（主题、语言、开屏动画、引导完成状态、硬件加速）
+├── digital-lab.log            # Electron 界面日志
+├── digital-lab.log.1 至 .3     # 界面日志轮转文件
+└── tmp\                       # 后端 Python 进程的临时目录（TEMP/TMP）
 ```
 
-程序目录内也会写入运行数据（开发模式下是源码目录，安装后是安装目录内）：
-
-- `memory\daily.jsonl`：按日性能汇总
-- `snapshots\`：性能快照
-- `reports\`：报告
-- `launchers.json`：快捷启动器配置
+程序目录（开发模式下是源码根目录；打包后按代码是 `backend.exe` 所在目录，即安装目录下的 `resources\`）只保存 `launchers.json`（快捷启动器配置）。按日汇总、性能快照和报告都写入 `%APPDATA%\DigitalLab\`，不写入程序目录。
 
 <Info>
-  说明：对话历史与 AI 记忆的保存目录可在设置中修改（对应 `ai.history.dir` 与 `ai.memory.dir`），修改后以上述你选择的目录为准。上表中的 `memory\` 是 AI 数据目录，与程序目录下用于按日汇总的 `memory\` 不是同一目录。
+  **自定义目录**：AI 记忆目录可在设置中通过系统目录选择器修改（`ai.memory.dir`）；对话历史目录没有界面入口，只能通过配置项 `ai.history.dir` 修改。两者也可分别由环境变量 `DIGITAL_LAB_AI_MEMORY_DIR` 与 `DIGITAL_LAB_CHAT_HISTORY_DIR` 覆盖，优先级为环境变量、配置项、默认目录。修改后以所选目录为准；修改记忆目录时旧文件会被复制到新目录，但不会从旧目录删除。
+
+  `daily.jsonl` 不受上述设置影响，始终位于 `%APPDATA%\DigitalLab\memory\`。
 </Info>
 
 ## 日志
 
 DigitalLab 在本机记录运行日志，用于故障排查和性能分析：
 
-- `%APPDATA%\DigitalLab\logs\monitor\daemon.log`：JSON Lines 格式的监控日志，记录时间戳、级别、事件消息与相关字段（如进程 PID、采集计数、指标阈值、NAS 设备名称与主机地址）。
-- `%APPDATA%\digital-lab\digital-lab.log`：界面进程日志，记录窗口生命周期、异常与 I/O 错误摘要。
-- `%APPDATA%\DigitalLab\logs\cache\hardware.json`：硬件信息缓存，避免每次启动重复采集。
+| 文件 | 写入方 | 内容 |
+| --- | --- | --- |
+| `%APPDATA%\DigitalLab\logs\monitor\daemon.log` | Python 后端 | JSON Lines 格式，记录时间戳、级别、事件消息与相关字段，例如进程 PID、采集计数、指标阈值、NAS 设备名称与主机地址 |
+| `%APPDATA%\digital-lab\digital-lab.log` | Electron 主进程 | 窗口生命周期、页面加载失败、主进程未捕获异常的消息与堆栈、I/O 错误摘要、后端临时目录路径、后端进程退出码，以及后端错误输出的提取标签与长度计数（不含原文） |
+| `%APPDATA%\DigitalLab\logs\cache\hardware.json` | Python 后端 | 硬件信息缓存，避免每次启动重复采集（不是日志，但同样位于 `logs\` 下） |
 
-日志仅写入本机用户可写目录，不包含 AI 对话内容与请求上下文，不上传至任何服务器，也不用于用户行为分析。日志未做脱敏处理。删除 `%APPDATA%\DigitalLab\logs\` 目录与 `%APPDATA%\digital-lab\digital-lab.log` 即可清除。
+界面日志单个文件上限 5 MB，超过后轮转并保留 `digital-lab.log.1` 至 `.3`；启动时如果发现遗留文件过大，只保留其末尾 256 KB。
+
+日志的隐私边界：
+
+- 日志不包含 AI 对话内容与 AI 请求上下文，只写入本机，不上传至任何服务器，也不用于用户行为分析。
+- 日志系统不做通用字段脱敏。监控日志可能包含 NAS 设备名称与主机地址；界面日志中的异常消息、堆栈和路径（可能包含 Windows 用户名）按原样写入。
+- 后端（Python）错误输出（stderr）的原文不写入界面日志。每收到一段错误输出，界面日志只记录一行 `Python stderr: kind=<标签> bytes=<长度>`：
+  - 标签取自该段输出第一个冒号之前的文本，只保留英文字母、下划线和空格，最多 40 个字符，因此可能包含错误输出开头的少量英文单词。
+  - 长度是去除首尾空白后的字符串长度（`text.length`，按 UTF-16 码元计数）。字段名虽为 `bytes`，但它不是实际字节数。
+  - 后端进程退出时只记录退出码。代码中预留的"stderr tail"缓冲区从未被写入，因此不会记录错误输出的尾部内容。
+- AI 请求失败时，返回界面显示的错误摘要会去除 URL，并把 `authorization`、`bearer`、`api_key`、`password`、`token` 等键值模式替换为 `<redacted>`，截断到 160 个字符。这是错误提示的脱敏，不是日志系统的脱敏。
+
+删除 `%APPDATA%\DigitalLab\logs\` 目录与 `%APPDATA%\digital-lab\` 下的 `digital-lab.log*` 文件即可清除日志。分享日志前请先检查内容。
 
 ## 数据删除方法
 
@@ -64,12 +83,18 @@ DigitalLab 在本机记录运行日志，用于故障排查和性能分析：
 
 - **对话历史**：设置 → AI 助手 → 对话历史。可关闭保存（停止写入新记录）、设置保留条数上限（超出后按最旧裁剪）、一键清空全部历史（不可恢复）。当前界面未提供单条删除入口（后端存在对应接口）。
 - **AI 记忆**：设置 → AI 助手 → AI 记忆。可关闭记忆、查看条目、逐条删除、清空全部；另有"清理重复"可合并重复条目（同一内容保留最早一条）。若你改过记忆目录，请同时删除旧目录中的文件。
-- **其他配置**（AI 提供方与 Key、监控阈值、设备列表、主题、语言等）：只能逐项修改，或按下面的方式手动删除数据目录。
+- **凭据**：设置界面可清除已保存的 API Key 与 NAS 密码。
+- **其他配置**（AI 提供方、监控阈值、设备列表、主题、语言等）：只能逐项修改，或按下面的方式手动删除数据目录。
 
 ### 手动删除
 
-- `%APPDATA%\DigitalLab\`：公共与敏感配置、监控日志与快照数据库、AI 对话历史、AI 记忆
-- `%APPDATA%\digital-lab\`：界面偏好（主题、语言、开屏动画开关、引导完成状态）与界面日志
-- 程序目录内的 `memory\`、`snapshots\`、`reports\` 与 `launchers.json`：按日汇总、性能快照、报告、快捷启动器配置
+- `%APPDATA%\DigitalLab\`：公共与敏感配置、监控日志与快照数据库、硬件缓存、按日汇总、性能快照、报告、SSH 主机信任库、AI 对话历史、AI 记忆
+- `%APPDATA%\digital-lab\`：界面偏好、界面日志与临时目录
+- 程序目录内的 `launchers.json`：快捷启动器配置
+- 如果你修改过对话历史或 AI 记忆目录，请同时删除对应目录中的文件
 
-卸载应用不会自动删除上面两个 `%APPDATA%` 目录，需要手动删除；程序目录内的这些文件会随安装目录一起被卸载程序移除。
+卸载应用不会自动删除上面两个 `%APPDATA%` 目录，需要手动删除。
+
+<Warning>
+  `launchers.json` 的卸载清理行为尚未验证：它由应用运行时写入程序目录，不是安装包分发的文件，卸载程序是否会删除它目前没有经过实测确认。卸载后请检查原安装目录，如有残留可手动删除。此外，程序目录在按机器安装或 Microsoft Store 安装下可能不可写，快捷启动器配置能否正常保存同样尚未验证。
+</Warning>

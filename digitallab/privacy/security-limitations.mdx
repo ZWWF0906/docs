@@ -3,23 +3,46 @@ title: "已知安全限制"
 description: "DigitalLab 当前版本已知的存储、传输、日志与功能层面的安全限制汇总。"
 ---
 
-本页汇总当前版本已确认的安全与隐私限制。所有条目均来自 PRIVACY.md、README 或 CHANGELOG，未添加推测性威胁或 CVE。
+本页汇总 v1.6.0 已确认的安全与隐私限制。所有条目均可在 v1.6.0 代码、PRIVACY.md、README 或 CHANGELOG 中找到依据，未添加推测性威胁或 CVE。
 
-| 序号 | 限制 | 影响 | 源文档提供的缓解措施 | 来源 |
+<Info>
+  早期文档中的三项限制在 v1.6.0 中已不再成立：凭据现以 DPAPI 密文存储；AI 端点按[传输策略](/digitallab/privacy/sensitive-information#ai-端点传输策略)限制 HTTP；渲染进程只收到凭据的"已配置"状态与掩码，不再收到明文。
+</Info>
+
+## 存储与凭据
+
+| 序号 | 限制 | 影响 | 缓解措施 | 依据 |
 | --- | --- | --- | --- | --- |
-| 1 | 日志未做脱敏处理 | 日志字段可能包含 NAS 设备名称与主机地址等可读信息 | 源文档未提供；可手动删除 `%APPDATA%\DigitalLab\logs\` 目录 | PRIVACY.md |
-| 2 | 凭据以明文形式存储在 `user_config.json` | 文件被获取即可直接读取 API Key、NAS 密码等 | 不要分享 `user_config.json`；按敏感文件保管 | PRIVACY.md |
-| 3 | HTTPS 未强制用于 AI 服务端点 | 若配置 `http` 端点，传输可能未加密 | 使用 `https` 端点并自行确认服务端安全性 | PRIVACY.md |
-| 4 | NAS SSH 凭据通过本地 IPC 传给渲染进程 | 仅限本机进程间传递，不是远程传输 | 源文档未提供 | PRIVACY.md |
-| 5 | 卸载应用不会自动删除 `%APPDATA%` 数据 | 个人数据可能留在本机 | 手动删除 `%APPDATA%\DigitalLab\` 和 `%APPDATA%\digital-lab\` | PRIVACY.md |
-| 6 | 关闭"保存对话历史"不删除已有记录 | 历史文件仍保留在本机 | 手动清空或在设置中一键清空 | PRIVACY.md |
-| 7 | 关闭"保存对话历史"不会停止 AI 请求 | 当前消息与已有会话内容仍随请求发送 | 源文档未提供 | PRIVACY.md |
-| 8 | 禁用 AI 记忆不删除已有记忆文件 | `ai_memory.jsonl` 仍保留在本机 | 在设置中删除或清空记忆；若修改过目录，同时删除旧目录文件 | PRIVACY.md |
-| 9 | 当前界面未提供单条对话历史删除入口 | 无法逐条删除记录 | 一键清空全部历史；后端已存在对应接口 | PRIVACY.md |
-| 10 | SSH 会话暂不支持自动重连 | 连接中断后需手动重建会话 | 源文档未提供 | README / CHANGELOG |
-| 11 | SSH 终端处于测试阶段 | 功能稳定性可能存在不足 | 首次进入时会弹窗提示 | README |
-| 12 | AI 助手处于测试阶段 | 功能稳定性可能存在不足；仅支持对话，不包含 Agent 工具调用 | 首次进入时会弹窗提示 | README / CHANGELOG |
-| 13 | NAS 监控仅支持基于 Linux 的 NAS（通过 SSH 命令） | 其他平台 NAS 无法使用监控功能 | 源文档未提供 | CHANGELOG |
+| 1 | 凭据加密依赖 Windows DPAPI 当前用户作用域 | 同一 Windows 用户下运行的其他程序可以解密；换用户或换机器后无法解密，需要重新输入 | 保护好 Windows 账户；不要在共用账户下保存凭据 | 代码（`core/secret_store.py`） |
+| 2 | 只有 API Key、NAS 密码与 `auth_token` 被加密 | NAS 名称、主机地址、端口、用户名以及 AI 服务地址与模型名在 `user_config.json` 中可读 | 不要分享 `%APPDATA%\DigitalLab\` 下的配置文件 | 代码 / PRIVACY.md |
+| 3 | 卸载应用不会自动删除 `%APPDATA%` 数据 | 配置、日志、对话历史、记忆等个人数据可能留在本机 | 手动删除 `%APPDATA%\DigitalLab\` 和 `%APPDATA%\digital-lab\` | PRIVACY.md |
+
+## 传输
+
+| 序号 | 限制 | 影响 | 缓解措施 | 依据 |
+| --- | --- | --- | --- | --- |
+| 4 | 经 `ai.allow_insecure_http` 授权的私网或 Tailscale HTTP 端点不加密 | 请求内容在该网络链路上以明文传输；云端模型的 API Key 也在请求头中明文传输 | 只对可信网络中的本地模型服务授权；优先使用 HTTPS | 代码（`core/net_policy.py`） |
+| 5 | `ai.allow_insecure_http` 与 `ai.ca_bundle` 没有设置界面 | 需要手动编辑配置文件，误配置时请求会被拒绝或失败 | 修改前备份配置；保存时核对确认对话框中列出的变更 | 代码（`panels/settings.js`） |
+| 6 | NAS 连接不限制目标必须位于局域网 | 填写公网地址时 SSH 流量会经过公网 | 只连接可信主机；首次连接时核对主机指纹 | 代码（`core/ssh_trust.py`） |
+
+## 日志与本地记录
+
+| 序号 | 限制 | 影响 | 缓解措施 | 依据 |
+| --- | --- | --- | --- | --- |
+| 7 | 日志系统不做通用字段脱敏 | 监控日志可能包含 NAS 设备名称与主机地址；界面日志中的异常消息、堆栈与路径（可能包含 Windows 用户名）按原样写入 | 分享日志前先检查内容；按需删除日志文件，见[日志](/digitallab/privacy/data-storage#日志) | 代码（`main.js`、`core/logger.py`） |
+| 8 | 关闭"保存对话历史"不删除已有记录 | 历史文件仍保留在本机 | 在设置中一键清空，或手动删除文件 | PRIVACY.md |
+| 9 | 关闭"保存对话历史"不会停止 AI 请求 | 当前消息与已有会话内容仍随请求发送 | 不想发送的内容不要输入 AI 助手 | PRIVACY.md |
+| 10 | 禁用 AI 记忆不删除已有记忆文件 | `ai_memory.jsonl` 仍保留在本机 | 在设置中删除或清空记忆；若修改过目录，同时删除旧目录文件 | PRIVACY.md |
+| 11 | 当前界面未提供单条对话历史删除入口 | 无法逐条删除记录 | 一键清空全部历史；后端已存在对应接口 | 代码 / PRIVACY.md |
+
+## 功能
+
+| 序号 | 限制 | 影响 | 缓解措施 | 依据 |
+| --- | --- | --- | --- | --- |
+| 12 | SSH 会话暂不支持自动重连 | 连接中断后需手动重建会话；会话失效时的提示文案写着"正在重新连接"，但实际不会自动重连 | 手动重新连接 | 代码 / README / CHANGELOG |
+| 13 | SSH 终端处于测试阶段 | 功能稳定性可能存在不足 | 首次进入时会弹窗提示 | README |
+| 14 | AI 助手处于测试阶段 | 功能稳定性可能存在不足；仅支持对话，不包含 Agent 工具调用 | 首次进入时会弹窗提示 | README / CHANGELOG |
+| 15 | NAS 监控仅支持基于 Linux 的 NAS（通过 SSH 命令） | 其他平台 NAS 无法使用监控功能 | 无 | CHANGELOG |
 
 <Danger>
   请妥善保管个人信息，API Key、NAS 密码等敏感信息请勿轻易泄露给他人！
