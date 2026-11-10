@@ -1,0 +1,90 @@
+---
+title: "NAS and SSH terminal"
+description: "How to add a NAS device, verify and trust the SSH host fingerprint, and open an SSH terminal in a separate window, plus known limitations."
+sidebarTitle: "Terminal"
+---
+
+DigitalLab has a built-in SSH terminal based on xterm.js that can connect to configured NAS devices to execute remote commands and management operations. Starting with v1.6.0, the terminal runs in a separate "DigitalLab Terminal" window; the Terminal panel itself only lists the available devices.
+
+<Warning>
+  The **SSH terminal** is currently **in testing**. A prompt appears the first time you open the panel. Some features may not be stable; please report issues through the feedback channel.
+</Warning>
+
+## Adding a NAS device
+
+Before using the terminal, add a device in the **NAS Devices** tab of the **Settings** panel:
+
+1. Open the **Settings** panel
+2. Switch to the **NAS Devices** tab
+3. Click **\+ Add Device**
+4. Fill in the device name, host address, SSH port, username, and password
+5. Save the configuration
+
+The device automatically attempts to connect after being added. You can also click **Test Connection** when editing the device to verify the credentials. SSH service must be enabled on the NAS.
+
+## Trusting an SSH host
+
+DigitalLab verifies the NAS SSH host key before sending authentication credentials. Trust is recorded per `host:port`; changing the host address or port is treated as a new host.
+
+<Steps>
+  <Step title="View the fingerprint">
+    When connecting to an untrusted host for the first time, the connection is rejected and the Settings panel shows the host's SHA256 fingerprint.
+  </Step>
+  <Step title="Verify independently on the NAS">
+    Run the following command on the NAS console and confirm that the fingerprint in the output matches what the Settings panel shows:
+
+    ```bash
+    ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub
+    ```
+  </Step>
+  <Step title="Confirm trust">
+    After confirming the match, click **I verified it; trust this host**. The fingerprint is saved to `%APPDATA%\DigitalLab\ssh\ssh_trust.json`, then re-test the connection.
+  </Step>
+</Steps>
+
+- Untrusted hosts or hosts with a mismatched fingerprint **will not receive authentication credentials**
+- If a trusted host's fingerprint changes, the connection is immediately rejected until you re-verify and trust it
+- The trust file only stores the host public key, algorithm, fingerprint, and trust time; it does not store user credentials or private keys
+
+## Opening the terminal
+
+<Steps>
+  <Step title="Open the Terminal panel">
+    Click **Terminal** in the sidebar. The panel lists currently online, non-Mock NAS devices.
+  </Step>
+  <Step title="Select a device">
+    Click the button on the device entry. The app shows a native confirmation dialog "打开 SSH 终端？" ("Open SSH terminal?"; in v1.6.0 this dialog is shown in Chinese) with the device name, target `host:port`, and a note that untrusted hosts will not receive credentials and that the terminal runs in a separate window.
+  </Step>
+  <Step title="Work in the separate window">
+    After confirming, the terminal opens in the "DigitalLab Terminal" window (default 900 x 600, minimum 600 x 400). The window status bar shows `Connected` or `Session closed`.
+  </Step>
+</Steps>
+
+### Session behavior
+
+- Opening another terminal while one is already open or opening is in progress is rejected
+- Closing the terminal window, window load failure, or renderer process crash causes the backend to close the corresponding SSH session
+- The backend keeps a 256 KB output buffer per session; the terminal window replays this output after connecting to the session
+- Single input is limited to 8192 characters, with a rate limit
+- The terminal window's content security policy (CSP) prevents the renderer process from initiating network connections
+
+<Warning>
+  SSH sessions **do not support automatic reconnection**. If the window is closed, the network is interrupted, or the backend restarts, the session ends and you must return to the Terminal panel to reopen the terminal.
+</Warning>
+
+### Terminal theme
+
+The terminal window keeps a dark CMD-style background under both the **dark theme** and the **light theme**.
+
+## Known limitations
+
+- **Linux-based NAS only**: data is collected through SSH commands; other NAS platforms are not yet supported
+- **No automatic reconnection**: sessions must be reopened manually after they end
+- **SSH service must be enabled**: make sure the target NAS has SSH started and the credentials are correct
+- **First connection requires trusting the host**: authentication cannot complete until fingerprint verification is done
+
+## Security reminder
+
+NAS passwords are saved as Windows DPAPI current-user scope ciphertext (`dpapi:v1:`) in `%APPDATA%\DigitalLab\user_config.json`; the settings UI only shows a "Configured" status. Other device fields such as host address and username remain readable JSON. This file should still be treated as sensitive and not shared with others. NAS credentials are not sent along with AI requests.
+
+For details about credential storage, see [Sensitive information handling](/en/digitallab/privacy/sensitive-information).

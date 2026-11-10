@@ -1,0 +1,173 @@
+---
+title: "Configuration and storage"
+description: "DigitalLab's dual-layer configuration storage, DPAPI credential protection and migration, config.json key tables, ai.* keys, runtime data locations, and the UI preferences file."
+sidebarTitle: "Configuration and storage"
+---
+
+DigitalLab separates public settings from sensitive data through dual-layer configuration storage, while maintaining an independent UI preferences file. This page is organized from the v1.6.0 codebase. For the complete list of data and log files, see [Data processing and storage](/en/digitallab/privacy/data-storage).
+
+## Configuration file locations
+
+| Configuration file | Location | Contents |
+| --- | --- | --- |
+| `config.json` (runtime) | `%APPDATA%\DigitalLab\config.json` | Public configuration: port, thresholds, log level, toggles, etc. When the file does not exist, it is created by any of the following operations, and afterwards every execution overwrites it entirely: GUI settings save (backend writes via `_atomic_write_json`, `main.py` line 1638); CLI `init` or `config` command (calls `Config.save()`, `main.py` lines 127, 196) |
+| `config.json` (template) | Program directory (installation directory after installation, repo root in development mode) | Default-value template in the repo root; used as a fallback when there is no runtime config in APPDATA. According to the `package.json` packaging config (`build.files`, `extraResources`), this file is not bundled into the installer, so the fallback file does not exist after packaging and code defaults are used directly |
+| `user_config.json` | `%APPDATA%\DigitalLab\user_config.json` | `ai`, `nas_devices`, and `auth_token` groups of fields, where credential values are DPAPI ciphertext |
+| UI preferences `config.json` | `%APPDATA%\digital-lab\config.json` | Theme, language, splash animation, onboarding status, hardware acceleration |
+| `launchers.json` | Program directory | Quick-launcher configuration, written by the app at runtime. Whether the program directory is writable under per-machine or Store installation, and whether it is cleaned on uninstall, are not yet verified |
+| `ssh_trust.json` | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` | SSH host trust store (host public key, algorithm, fingerprint, trust time); does not contain credentials |
+
+`Config.load()` first reads `%APPDATA%\DigitalLab\config.json`, falls back to `config.json` in the program directory, and then overlays the contents of `user_config.json`. Regardless of where it is read from, saving always writes to `%APPDATA%\DigitalLab\config.json` and never writes back to the template in the program directory.
+
+## Runtime data locations
+
+In addition to configuration files, the application writes the following data at runtime, all within the user directory:
+
+| Data | Location |
+| --- | --- |
+| Daily performance summary | `%APPDATA%\DigitalLab\memory\daily.jsonl` |
+| AI chat history | Default `%APPDATA%\DigitalLab\memory\chat_history.jsonl` |
+| AI long-term memory | Default `%APPDATA%\DigitalLab\memory\ai_memory.jsonl` |
+| Performance snapshots | `%APPDATA%\DigitalLab\snapshots\` |
+| Reports | `%APPDATA%\DigitalLab\reports\` |
+| Snapshot database, monitor logs, daemon PID | `%APPDATA%\DigitalLab\logs\monitor\` for `monitor.db`, `daemon.log`, and `daemon.pid` |
+| Hardware info cache | `%APPDATA%\DigitalLab\logs\cache\hardware.json` |
+| SSH host trust store | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` |
+| Electron UI logs | `%APPDATA%\digital-lab\digital-lab.log` (rotated, retaining `.1` through `.3`) |
+| Backend temp directory | `%APPDATA%\digital-lab\tmp\` |
+
+When `main.js` starts the Python backend, it points the child process `TEMP` / `TMP` to `%APPDATA%\digital-lab\tmp`, not relying on the system temp directory.
+
+The directories for chat history and AI memory can be changed. Effective order is: environment variable, config item, default directory.
+
+| Feature | Environment variable | Config item | Default |
+| --- | --- | --- | --- |
+| Chat history toggle | `DIGITAL_LAB_CHAT_HISTORY_ENABLED` | `ai.history.enabled` | Enabled |
+| Chat history limit | `DIGITAL_LAB_CHAT_HISTORY_LIMIT` | `ai.history.limit` | 200 (limited to 20 to 5000) |
+| Chat history directory | `DIGITAL_LAB_CHAT_HISTORY_DIR` | `ai.history.dir` | `%APPDATA%\DigitalLab\memory` |
+| AI memory toggle | `DIGITAL_LAB_AI_MEMORY_ENABLED` | `ai.memory.enabled` | Disabled |
+| AI memory directory | `DIGITAL_LAB_AI_MEMORY_DIR` | `ai.memory.dir` | `%APPDATA%\DigitalLab\memory` |
+
+Directory values must pass local-path policy validation (rejecting UNC paths, device namespaces, path traversal, symlinks, etc.). If rejected, the fallback is the default directory. The location of `daily.jsonl` is fixed and unaffected by these settings.
+
+## Sensitive field separation
+
+`core/config.py` defines the sensitive-field set `_SENSITIVE_KEYS = {"auth_token", "ai", "nas_devices"}`. When `Config.save()` writes, it filters these three groups of fields out of `config.json` and saves them separately to `user_config.json`.
+
+## DPAPI credential protection and migration
+
+Starting with v1.6.0, credential values are encrypted using Windows DPAPI in the current-user scope, saved with the `dpapi:v1:` prefix. `core/secret_store.py` encrypts the following fields:
+
+| Field | Description |
+| --- | --- |
+| `ai.openai.api_key` | Cloud API key |
+| `nas_devices[].password` | NAS SSH password |
+| `auth_token` | Legacy field; currently appears unused |
+
+Other fields under `ai` (provider, address, model, memory and history settings, etc.) and NAS name, host, port, and username remain readable JSON.
+
+Migration is handled uniformly by `secret_store.ensure_credentials_ready()` before credentials are read at runtime. `Config.load()` no longer handles sensitive-field migration:
+
+1. Read legacy sensitive fields remaining in `%APPDATA%\DigitalLab\config.json` and `user_config.json`.
+2. Encrypt plaintext credentials into `dpapi:v1:` ciphertext, validate them in memory, then atomically write to `user_config.json` and re-read to verify.
+3. Only after user configuration is safely persisted are the sensitive fields cleared from the old `config.json`.
+4. If any step fails, credential usage is blocked at runtime and it does not fall back to plaintext.
+
+At runtime, only DPAPI ciphertext is accepted when reading credentials; plaintext values are treated as errors.
+
+<Note>
+  The `secret_store.get_secret()` function itself still accepts plaintext: when the input is DPAPI ciphertext it decrypts, otherwise it returns the plaintext as-is (its docstring "allows reading historical plaintext" is consistent with the function behavior). Actual runtime credential reading does not go through it: the AI API key (`core/ai_client.py`) and NAS password (`core/nas_monitor.py`, `main.py` `_get_nas_devices()`) both call `get_runtime_secret()`, which only accepts DPAPI ciphertext. Currently no caller uses `get_secret()`; if new code later switches to it, plaintext credentials would be accepted.
+</Note>
+
+## config.json key table
+
+Below are the default values, types, ranges, and descriptions for each key in `config.json`, based on `config.schema.json` and `core/config_validator.py`:
+
+| Key | Default | Type | Range | Description |
+| --- | --- | --- | --- | --- |
+| `log_level` | `"INFO"` | `string` | `DEBUG` / `INFO` / `WARN` / `ERROR` | Log level |
+| `log_max_days` | `30` | `integer` | 1 to 365 | Log retention days |
+| `log_format` | `"%(asctime)s ..."` | `string` | None | Python logging format string |
+| `auto_organize_enabled` | `false` | `boolean` | None | Auto-organize toggle |
+| `auto_organize_interval` | `3600` | `integer` | 1 to 86400 | Auto-organize interval (seconds) |
+| `dashboard_port` | `8080` | `integer` | 1 to 65535 | Web Dashboard port |
+| `dashboard_host` | `"127.0.0.1"` | `string` | None | Web Dashboard listen address |
+| `monitor_threshold_cpu` | `80` | `integer` | 0 to 100 | CPU alert threshold (%) |
+| `monitor_threshold_memory` | `85` | `integer` | 0 to 100 | Memory alert threshold (%) |
+| `monitor_threshold_disk` | `90` | `integer` | 0 to 100 | Disk alert threshold (%) |
+| `monitor_alert_cooldown` | `300` | `integer` | 1 to 86400 | Alert cooldown (seconds) |
+| `monitor_interval` | `60` | `integer` | 1 to 86400 | Daemon collection interval (seconds) |
+
+The following keys exist in the `config.json` template, but are **not defined** in `config.schema.json` / `config_validator.py` `_SCHEMA`:
+
+| Key | Template value | Description |
+| --- | --- | --- |
+| `hardware_acceleration` | `false` | Legacy key retained in the template. `main.js` actually reads the key of the same name in the UI preferences file (see [UI preferences file](#ui-preferences-file)), not the value here |
+| `nas_mock_enabled` | `true` | NAS Mock device toggle; controls whether simulated NAS data is generated. Code treats the missing key as `false`; there is a corresponding toggle in Settings |
+
+<Note>
+  Because these two keys are not in the validator's `_SCHEMA`, their values are not fixed or clamped by the validator; if the type is wrong, expected behavior of the corresponding feature may be affected. The settable `nas_interval` is likewise not in `_SCHEMA`.
+</Note>
+
+## ai.\* configuration keys
+
+The `ai` field is saved in `user_config.json`. The following keys are read in the source code, some of which can only be set by editing the config file:
+
+| Key | Description | Settings panel entry |
+| --- | --- | --- |
+| `ai.provider` | Default provider (Ollama or Cloud API) | Yes |
+| `ai.ollama.base_url` / `ai.ollama.model` | Ollama address and model, default `http://localhost:11434` and `llama3` | Yes |
+| `ai.openai.base_url` / `ai.openai.model` | Cloud API address and model, default `https://api.deepseek.com` and `deepseek-chat` | Yes |
+| `ai.openai.api_key` | Cloud API key (DPAPI ciphertext) | Yes, only shows configured status |
+| `ai.history.enabled` / `ai.history.limit` / `ai.history.dir` | Chat history toggle, record limit, directory | Toggle and limit yes, directory no |
+| `ai.memory.enabled` / `ai.memory.dir` | AI memory toggle and directory | Yes, directory via native picker |
+| `ai.allow_insecure_http` | Allowlist for private-network or Tailscale addresses using HTTP | No |
+| `ai.ca_bundle` | Custom CA Bundle file path; if explicitly configured but missing or unreadable, the request fails | No |
+
+When saving settings, if the provider, service address, API key, CA Bundle path, or memory directory changes, or a new `ai.allow_insecure_http` entry is added, `main.js` pops a native system confirmation dialog listing these changes (the API key only prompts that it will be updated to a new value, without showing the value in the dialog).
+
+### Private-network HTTP precise authorization
+
+AI service addresses default to allowing only HTTPS and loopback HTTP (`127.0.0.0/8`, `::1`, and `localhost` resolving only to loopback). HTTP services on private-network or Tailscale addresses must be registered one by one in `ai.allow_insecure_http`:
+
+```json
+{
+  "ai": {
+    "allow_insecure_http": ["192.168.1.20:11434"]
+  }
+}
+```
+
+- Each entry is an `ip[:port]` literal, without protocol or path. Port omitted defaults to `80`.
+- Only exactly matching IP and port are accepted; network ranges, wildcards, or domains are not supported.
+- The entry only takes effect for private networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`) and Tailscale (`100.64.0.0/10`, `fd7a:115c:a1e0::/48`). Domains, public IPs, link-local addresses, and cloud metadata addresses are rejected even if registered.
+- HTTP requests after authorization are still transmitted in plaintext.
+
+For the full policy, see [AI endpoint transport policy](/en/digitallab/privacy/sensitive-information#ai-endpoint-transport-policy).
+
+## UI preferences file
+
+Interface-level preferences are stored in `%APPDATA%\digital-lab\config.json` (note the kebab-case directory name `digital-lab`, which is Electron's userData directory). It is read and written directly by `main.js`, bypassing the Python backend. It contains the following keys:
+
+| Key | Description |
+| --- | --- |
+| `theme` | `light` / `dark` |
+| `language` | `zh-CN` / `en-US` / `ja-JP` |
+| `splash_animation` | Splash animation toggle |
+| `onboarding_done` | Whether first-run onboarding is complete |
+| `hardware_acceleration` | Hardware acceleration toggle (effective on next start) |
+
+The `hardware_acceleration` decision rule: when the file does not exist, hardware acceleration is off (for compatibility with virtual machines). When the file exists, only when this key is explicitly `false` is acceleration off; key missing is treated as on.
+
+`main.js` automatically strips the UTF-8 BOM when reading these files, avoiding JSON parse failures after editing with Notepad and similar tools.
+
+## Configuration validation
+
+`core/config_validator.py` runs when the Python backend starts. The validation target is the **program directory** `config.json` template, not `%APPDATA%\DigitalLab\config.json`:
+
+1. Read `config.json` in the program directory.
+2. For each field in `_SCHEMA`, perform type conversion, range clamping, and enum validation.
+3. If missing, type-error, or out-of-range values are found, automatically fill defaults and write back to that file, preserving fields outside `_SCHEMA`, while outputting a validation report.
+4. Generate `config.schema.json` in the same directory, keeping it in sync with the validation rules.
+
+To view the actual data, logs, and configuration file list on your machine, please refer to [Data processing and storage](/en/digitallab/privacy/data-storage).

@@ -1,0 +1,88 @@
+---
+title: "System architecture"
+description: "Overview of DigitalLab's system architecture, from the renderer process to the Python backend layers and design principles."
+sidebarTitle: "Architecture overview"
+---
+
+DigitalLab uses a hybrid Electron + Python desktop architecture that balances rich frontend interactivity with backend system-level collection capabilities. All data flows into `system_state`, and all UI consumes only `system_state`, forming a single source of truth.
+
+## Architecture layers
+
+```text
+┌──────────────────────────────────────┐
+│  Electron main process (main.js)     │
+│  Window management · Tray · IPC      │
+│         │ spawn                      │
+│         ▼                            |
+│  Python child process (main.py)      │
+│  Monitoring · Hardware detection ·   │
+│   NAS SSH · AI                       │
+│         │                            │
+│  stdin/stdout JSON Lines protocol    │
+│  Request/response: requestId match   │
+│  State updates: broadcast mode       │
+└──────────────────────────────────────┘
+```
+
+### Renderer layer
+
+The renderer layer consists of `dashboard.html` and five panel scripts:
+
+- **Dashboard** (`panels/dashboard.js`)
+- **Device Center** (`panels/device-center.js`)
+- **SSH Terminal** (`panels/terminal.js`)
+- **AI Assistant** (`panels/ai-assistant.js`)
+- **Settings panel** (`panels/settings.js`)
+
+Panels communicate with the main process through the `preload.js` exposed `window.digitalLab` API and subscribe to `state-update` events to refresh the UI. Both the Dashboard and Terminal pages set `connect-src` to `'none'` via CSP, preventing the renderer process from initiating network connections.
+
+### IPC bridge layer
+
+`preload.js` uses `contextBridge.exposeInMainWorld('digitalLab', ...)` to inject a secure interface into the renderer process, including channels for state subscription, command sending, config read/write, AI streaming events, and more. `nodeIntegration` is `false`, and `contextIsolation` is `true`; the renderer process cannot directly access Node.js or Electron internal APIs.
+
+### Electron main process layer
+
+`main.js` manages the window lifecycle, system tray, single-instance lock, Python child process management, threshold alert notifications, and application-level config read/write for theme, language, and hardware acceleration. It exchanges JSON Lines messages with the Python child process through standard input and output.
+
+### Python backend layer
+
+`main.py` starts in `--json-mode` and communicates with the main process through `stdin/stdout`. It initializes collectors, NAS monitoring, the event bus, and system state, and continuously reads commands from stdin in a dedicated thread. Monitoring collection runs on a dual-thread model (fast collection and slow hardware refresh separated).
+
+## Core design principles
+
+The README defines the following architectural principles:
+
+- **All data flows into `system_state`, and every UI consumes only `system_state`**: single source of truth, frontend and backend decoupled.
+- **Local-first, modular, extensible**: core features work without a network, and panels load on demand.
+- **Electron core communication does not rely on HTTP**: uses the JSON Lines IPC protocol with zero network overhead; an optional Flask Web Dashboard service is also provided.
+- **Privacy First**: device data is stored locally by default; AI/NAS credentials are encrypted with Windows DPAPI (current-user scope) starting from v1.6.0; AI endpoints require HTTPS by default (loopback HTTP is allowed, HTTP for private subnets or Tailscale addresses requires the user to explicitly authorize the `ip[:port]`); runtime data is stored uniformly under `%APPDATA%\DigitalLab\` and `%APPDATA%\digital-lab\`.
+
+<Note>
+  The optional Web Dashboard is based on Flask and is configured in `config.json` with its listen address and port (default `127.0.0.1:8080`). The README and CHANGELOG v1.0.0 both mention this service as optional, but the current source does not provide usage instructions, so the actual enablement method needs further verification.
+</Note>
+
+## Module navigation
+
+The next five pages dive deeper into architecture details from the perspectives of process integration, communication protocol, state management, panel loading, and configuration storage:
+
+<CardGroup cols={2}>
+  <Card title="Electron and Python integration" icon="plug" href="/en/digitallab/architecture/electron-python">
+    Child process startup, automatic restart on crash, single-instance lock, and tray behavior
+  </Card>
+
+  <Card title="JSON Lines IPC protocol" icon="code" href="/en/digitallab/architecture/jsonl-ipc">
+    Message frame format, command table, error responses, and streaming events
+  </Card>
+
+  <Card title="System state and event management" icon="database" href="/en/digitallab/architecture/system-state">
+    `system_state` single source of truth, `event_bus`, and `collector` dual-thread collection
+  </Card>
+
+  <Card title="Modular panel architecture" icon="layout" href="/en/digitallab/architecture/panels">
+    Panel registry, on-demand loading, keep-alive, and session persistence mechanisms
+  </Card>
+
+  <Card title="Configuration and storage" icon="folder" href="/en/digitallab/architecture/configuration-storage">
+    Dual-layer config storage, UI preferences file, and first-run migration
+  </Card>
+</CardGroup>

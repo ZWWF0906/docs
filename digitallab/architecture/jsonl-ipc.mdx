@@ -23,11 +23,12 @@ DigitalLab 的核心通信采用 JSON Lines（JSONL）协议：每一行是一�
 - `__cmd_response__: true` 标记
 - `requestId` 回显请求中的 ID
 
-若出错，响应包含 `error` 字段，常见取值：
+若出错，响应包含 `error` 字段。常见场景：
 
-- `"unknown command"`：命令不存在
-- `"handler error: ..."`：命令处理器抛异常
-- `"invalid JSON"`：stdin 行无法解析为 JSON
+- 命令不在白名单：返回 `error.code = "ipc.err.forbidden"`。
+- 参数校验失败：返回 `error.code = "ipc.err.invalidParams"`。
+- 命令处理器抛异常：返回 `"handler error: ..."`。
+- stdin 行无法解析为 JSON：返回 `"invalid JSON"`。
 
 ### 超时
 
@@ -35,35 +36,34 @@ DigitalLab 的核心通信采用 JSON Lines（JSONL）协议：每一行是一�
 
 ## Python 命令表
 
-以下为 `main.py` 中 `_handle_command` 支持的命令：
+以下为 `main.py` 中 `_handle_command` 白名单 `_RENDERER_COMMANDS` 支持的命令：
 
 | 命令 | 说明 |
 | --- | --- |
+| `ping` | 心跳测试，返回 `{ pong: true }` |
 | `get_hardware` | 获取当前硬件快照（从 `_format_state()` 提取 `hardware`） |
-| `get_processes` | 获取当前进程列表（从 `_format_state()` 提取 `monitor.processes`） |
-| `get_history` | 查询历史监控数据，参数 `hours` |
-| `ai_message` | 兼容旧接口，返回占位提示 |
+| `get_config` | 获取完整配置（含敏感字段从 `user_config.json` 合并） |
+| `save_config_patch` | 保存配置补丁，参数 `patch`、`dirty` |
+| `save_device` | 保存 NAS 设备配置，参数 `device`、`dirty` |
+| `delete_device` | 删除指定 NAS 设备，参数 `name` |
+| `clear_credential` | 清除凭据，参数 `kind`、`name` |
+| `reload_config` | 重载配置：停止 NAS 监控、清理已删除设备状态、重载、重启监控 |
 | `ai_chat` | 流式 AI 对话，参数 `messages`、`provider`、`lang` |
 | `get_ai_memory` | 获取 AI 记忆设置与条目列表 |
-| `delete_ai_memory` | 按索引删除 AI 记忆 |
+| `delete_ai_memory` | 按索引删除 AI 记忆，参数 `index`、`expected_sha256` |
 | `clear_ai_memory` | 清空全部 AI 记忆 |
 | `dedupe_ai_memory` | 合并重复记忆 |
-| `chat_history_get` | 获取对话历史 |
-| `chat_history_append` | 追加对话记录 |
-| `chat_history_clear` | 清空对话历史 |
-| `chat_history_delete` | 按 `id` 或 `index` 删除单条记录 |
-| `ping` | 心跳测试，返回 `{ pong: true }` |
-| `get_config` | 获取完整配置（含敏感字段从 `user_config.json` 合并） |
-| `save_config` | 保存配置，参数 `config` |
-| `test_nas_connection` | 测试 NAS 连通性，支持 `async` 模式 |
-| `reload_config` | 重载配置：停止 NAS 监控、清理已删除设备状态、重载、重启监控 |
-| `get_nas_devices` | 获取已配置的 NAS 设备列表 |
+| `chat_history_get` | 获取对话历史，参数 `limit`、`session_id` |
+| `chat_history_append` | 追加对话记录，参数 `role`、`content`、`session_id` |
+| `chat_history_clear` | 清空对话历史，参数 `session_id` |
+| `test_nas_connection` | 测试 NAS 连通性，支持 `async` 模式，参数 `device_id` |
+| `ssh_probe` | SSH 主机探测与指纹收集，参数 `device_id` |
+| `ssh_confirm_trust` | 确认 SSH 主机信任，参数 `device_id`、`fingerprint`、`replace` |
 | `terminal_input` | 向终端会话发送输入，参数 `session_id`、`data` |
 | `terminal_resize` | 调整终端 PTY 尺寸，参数 `session_id`、`cols`、`rows` |
-| `terminal_close` | 关闭终端会话 |
-| `terminal_list` | 列出后端存活会话 |
-| `terminal_attach` | 重附着会话并回放环形缓冲 |
-| `ssh_terminal_init` | 初始化 SSH 终端连接，支持 `async` 模式 |
+| `terminal_close` | 关闭终端会话，参数 `session_id` |
+| `terminal_attach` | 重附着会话并回放环形缓冲，参数 `session_id` |
+| `ssh_terminal_init` | 初始化 SSH 终端连接，支持 `async` 模式，参数 `device_id`、`cols`、`rows` |
 
 ## 流式与异步事件
 
@@ -99,7 +99,7 @@ if frame != _last_frame or (now - _last_frame_ts) >= _HEARTBEAT_SECONDS:
 ```
 
 <Note>
-  上述状态广播去重行为来自当前仓库主分支源码中的主循环实现。源码注释中标记了 1.5.1 的清理项，该实现细节可能在后续版本中调整。
+  上述状态广播去重行为来自 `main.py` 中 1.5.1 的主循环实现。
 </Note>
 
 状态帧包含以下顶层键：
@@ -121,28 +121,58 @@ Python 后端使用 `_stdout_lock = threading.Lock()` 保护 `_safe_print`，防
 
 | 方法 | IPC 通道 | 说明 |
 | --- | --- | --- |
-| `onStateUpdate(callback)` | `state-update` | 订阅状态广播 |
-| `sendCommand(cmd)` | `send-command` | 发送任意命令并等待响应 |
-| `aiChat(messages, provider)` | `send-command` (`cmd: 'ai_chat'`) | 发起流式 AI 对话 |
-| `onAiToken(callback)` | `ai-token` | 订阅 AI token 流 |
-| `onAiDone(callback)` | `ai-done` | 订阅 AI 回复结束 |
-| `onTerminalData(callback)` | `terminal-data` | 订阅终端输出 |
-| `onTerminalConnectResult(callback)` | `terminal-connect-result` | 订阅 SSH 建链结果 |
-| `onNasTestResult(callback)` | `nas-test-result` | 订阅 NAS 连通性结果 |
-| `onPythonStatus(callback)` | `python-status` | 订阅 Python 进程可用性状态 |
+| `onStateUpdate(callback)` | `state-update` (监听) | 订阅状态广播 |
+| `onAiToken(callback)` | `ai-token` (监听) | 订阅 AI token 流 |
+| `onAiDone(callback)` | `ai-done` (监听) | 订阅 AI 回复结束 |
+| `onNasTestResult(callback)` | `nas-test-result` (监听) | 订阅 NAS 连通性结果 |
+| `onPythonStatus(callback)` | `python-status` (监听) | 订阅 Python 进程可用性状态 |
+| `onWindowShown(callback)` | `window-shown` (监听) | 窗口显示事件 |
+| `getHardware()` | `api:hardware:get` (invoke) | 获取硬件快照 |
+| `getConfig()` | `api:config:get` (invoke) | 获取完整配置 |
+| `saveSettings(patch, dirty)` | `api:config:save_settings` (invoke) | 保存配置补丁 |
+| `saveDevice(device, dirty)` | `api:config:save_device` (invoke) | 保存设备配置 |
+| `deleteDevice(name)` | `api:config:delete_device` (invoke) | 删除设备 |
+| `clearCredential(kind, name)` | `api:config:clear_credential` (invoke) | 清除凭据 |
+| `reloadConfig()` | `api:config:reload` (invoke) | 重载配置 |
+| `aiChat(messages, provider, lang)` | `api:ai:chat` (invoke) | 发起流式 AI 对话 |
+| `testNasConnection(deviceId)` | `api:nas:test` (invoke) | 测试 NAS 连通性 |
+| `sshProbe(deviceId)` | `api:nas:probe` (invoke) | SSH 主机探测 |
+| `sshConfirmTrust(challengeId)` | `api:nas:confirm_trust` (invoke) | 确认信任指纹 |
+| `terminalOpen(deviceId, cols, rows)` | `api:terminal:open` (invoke) | 打开独立终端窗口 |
+| `chooseMemoryDir()` | `api:memory:choose_dir` (invoke) | 通过系统原生选择器选择 AI 记忆目录 |
+| `chooseCaBundle()` | `api:ai:choose_ca_bundle` (invoke) | 通过系统原生选择器选择可选的 CA Bundle |
+| `memoryStatus()` | `api:memory:status` (invoke) | 获取 AI 记忆状态 |
+| `memoryList(limit)` | `api:memory:list` (invoke) | 列出 AI 记忆 |
+| `memoryDelete(index, expectedSha256)` | `api:memory:delete` (invoke) | 删除指定记忆 |
+| `memoryClear()` | `api:memory:clear` (invoke) | 清空记忆 |
+| `memoryDedupe()` | `api:memory:dedupe` (invoke) | 合并重复记忆 |
+| `historyList(limit)` | `api:history:list` (invoke) | 列出对话历史 |
+| `historyAppend(role, content)` | `api:history:append` (invoke) | 追加对话记录 |
+| `historyClear()` | `api:history:clear` (invoke) | 清空对话历史 |
+
+`preload-terminal.js` 仅向 `terminal.html` 暴露 `window.terminalAPI`，提供终端专属通道：
+
+| 方法 | IPC 通道 | 说明 |
+| --- | --- | --- |
+| `onContext(callback)` | `terminal-context` (监听) | 订阅终端上下文 |
+| `onData(callback)` | `terminal-data` (监听) | 订阅终端输出 |
+| `attach(sessionId)` | `api:terminal:attach` (invoke) | 重附着会话 |
+| `input(sessionId, data)` | `api:terminal:input` (invoke) | 发送终端输入 |
+| `resize(sessionId, cols, rows)` | `api:terminal:resize` (invoke) | 调整终端尺寸 |
+| `close(sessionId)` | `api:terminal:close` (invoke) | 关闭终端会话 |
 
 ## 示例 JSON Lines
 
 **请求**：
 
 ```json
-{"cmd": "get_history", "hours": 24, "requestId": "a1b2-c3d4-e5f6-7890"}
+{"cmd": "get_hardware", "requestId": "a1b2-c3d4-e5f6-7890"}
 ```
 
 **响应**：
 
 ```json
-{"cpu_avg": 12.3, "cpu_max": 45.6, "memory_avg": 56.7, "memory_max": 78.9, "disk_avg": 34.5, "disk_max": 67.8, "count": 1440, "__cmd_response__": true, "requestId": "a1b2-c3d4-e5f6-7890"}
+{"hardware": {"cpu": {"model": "Intel Core i7", "cores": 8, "threads": 16}, "gpu": {"name": "RTX 3060", "vram_gb": 12}}, "__cmd_response__": true, "requestId": "a1b2-c3d4-e5f6-7890"}
 ```
 
 **AI token 流**：

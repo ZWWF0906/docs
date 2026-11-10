@@ -1,0 +1,80 @@
+---
+title: "システム状態とイベント管理"
+description: "system_state を単一データソースとする管理機構、および event_bus と collector のデュアルスレッドによる収集の実装詳細。"
+sidebarTitle: "システム状態とイベント"
+---
+
+DigitalLab のアーキテクチャ原則は「すべてのデータを `system_state` に入れ、すべての UI は `system_state` のみを消費する」です。このページでは、`system_state`、`event_bus`、`collector` がどのように連携してこの原則を実現しているかを説明します。
+
+## system_state：グローバル状態センター
+
+`core/system_state.py` は、スレッドセーフな状態ディクショナリを実装しています。
+
+- 内部では `_system_state` ディクショナリと `_lock` スレッドロックを使用しています。
+- 名前空間方式のストレージ：`monitor`、`hardware`、`nas` などの最上位キーがあります。
+- 値の形式は `{ "value": x, "ts": t }` で、`_upsert_with_ts` は書き込み時にタイムスタンプを確認し、より新しい値のみを保持して、古いデータが新しいデータを上書きするのを防ぎます。
+
+### 主要な API
+
+| メソッド | 説明 |
+| --- | --- |
+| `__getitem__(key)` | 名前空間の取得または作成 |
+| `__setitem__(key, value)` | 名前空間の値を直接設定 |
+| `update(key, sub_key, value)` | 名前空間内のサブキーを更新 |
+| `delete(key, sub_key)` | 名前空間内のサブキーを削除 |
+| `snapshot()` | 現在の状態のディープコピーしたディクショナリを返す |
+
+### `_format_state` の構築プロセス
+
+`main.py` の `_format_state()` は、メインループから毎秒呼び出され、`system_state` からデータを抽出してフォーマットします。
+
+1. `system_state.snapshot()` を取得します。
+2. `monitor` 名前空間から `cpu`、`memory`、`disk` を読み取ります。これらの値は `{"value": x, "ts": t}` ディクショナリか純粋な数値の可能性があり、`isinstance` で判定してアンパックする必要があります。
+3. プロセスリストは `monitor.processes` の先頭 15 件を取得します。
+4. ハードウェアデータは `hardware` 名前空間から取得し、CPU、GPU、メモリ、ディスク、システム情報の概要フィールドを抽出します。
+5. NAS データは `nas` 名前空間をそのまま取得します。
+6. アラートは `monitor.alerts_history` の最後の 5 件を取得します。
+
+最終的に構築されたフレーム構造は、前文の /ja/digitallab/architecture/jsonl-ipc での状態フレームの例と一致しています。
+
+## event_bus：イベント配信
+
+`core/event_bus.py` は、軽量なイベントバスを提供しています。
+
+- `subscribe(callback)`：コールバック関数を登録します。
+- `emit(module, key, value)`：単一イベントを送信します。イベントの shape は `{ module, key, value, ts }` です。
+- `emit_batch(module, updates)`：同一モジュールの複数更新をバッチで送信します。共有する `ts` を使います。
+
+コールバックは呼び出し元のスレッドで同期的に実行されます。`_bus` は購読者リストのコピーを保持しており、イテレーション中の変更を防ぎます。
+
+## collector：デュアルスレッド収集
+
+`core/collector.py` は、2 つのデーモンスレッドを維持しています。
+
+### 高速スレッド (`_run_fast`)
+
+- 監視データベースを初期化します。
+- 毎秒 1 回 `collect_and_store()` を実行し、CPU、メモリ、ディスク使用率を収集します。
+- 収集成功後に `check_alerts()` を呼び出し、しきい値とクールダウン時間に基づいてアラートの発生を判定します。
+- 生成されたアラートは `system_state["monitor"]["alerts_history"]` に書き込まれ、直近 100 件を保持します。
+
+### 低速スレッド (`_run_slow`)
+
+- 3 秒ごとに 1 回 tick します。
+- `daily_aggregate()` を呼び出して日次のパフォーマンス集計を行います。
+- 10 tick ごと（約 30 秒）に `refresh_hardware_live()` を呼び出して、変動しやすいハードウェア情報（温度や周波数など）を更新します。
+
+### 起動と停止
+
+- `start_collector(interval=3.0)`：スレッドが実行中でない場合、2 つのスレッドを起動します。
+- `stop_collector()`：停止イベントを設定し、スレッドの終了を待ちます。タイムアウトは 5 秒です。
+
+## アラートの重複排除
+
+`core/monitor.py` のアラートは、シーケンス番号 `seq` を使って重複を排除しています。
+
+- `alert_state["seq"]` はプロセス内でインクリメントされ、アラートが 1 件生成されるごとに +1 されます。
+- 再起動後は 0 に戻ります。メインプロセスは `startPython()` の開始時に同期的に `lastSeenSeq` を 0 にリセットし、新しいプロセスのアラートが見逃されないようにします。
+- メインプロセスは `seq > lastSeenSeq` のアラートのみを処理し、Windows システム通知をポップアップ表示します。
+
+アラートの最小持続しきい値は 30 秒（`ALERT_MIN_DURATION = 30`）で、連続して 30 秒を超えてしきい値を超えた場合に初めて正式に出力されます。これにより、瞬間的な変動で通知がトリガーされるのを防ぎます。

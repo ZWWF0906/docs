@@ -1,0 +1,89 @@
+---
+title: "Quickstart"
+description: "A first-run guide from installation to daily use: get familiar with DigitalLab's core panels in minutes."
+---
+
+This guide walks you through installing DigitalLab and using it for the first time. It is based on the features in v1.6.0 on the GitHub `main` branch.
+
+## Before you begin
+
+Before you start, confirm that your computer meets the [system requirements](/en/digitallab/getting-started/system-requirements), then follow the [installation guide](/en/digitallab/getting-started/installation) to install DigitalLab: v1.6.1 and later are installed and updated through the Microsoft Store, while v1.6.0 is the last version to provide a GitHub standalone installer.
+
+## First run
+
+<Steps>
+  <Step title="Launch and splash animation">
+    On the first launch, the app plays a splash animation: hexagon and waveform stroke, wordmark reveals, and self-check items light up one by one. You can turn off this animation in the **Software** tab of the **Settings panel**; after turning it off, the app enters the main interface directly on the next launch.
+  </Step>
+  <Step title="Select interface language">
+    After the splash animation, the first step of onboarding is to **select the interface language**. DigitalLab supports Simplified Chinese, English, and Japanese. The change takes effect immediately, and you can change it again at any time in the **Settings panel**.
+  </Step>
+  <Step title="Add a NAS device">
+    The second step is to **add a NAS device**. Fill in the following information:
+
+    - **Name**: device name
+    - **Host**: IP address of the NAS
+    - **Port**: SSH port (usually 22)
+    - **Username**: SSH username
+    - **Password**: SSH password
+
+    After saving, the app will try to connect. The password is saved on this machine as Windows DPAPI ciphertext. You can also click "Set up later" or "I don't have a NAS — use local monitoring" to skip this step.
+  </Step>
+  <Step title="Check connection">
+    The third step is to **check the connection**. The app tests SSH connectivity to the NAS. If the connection succeeds and the device is online, onboarding is complete. If it times out or fails, you can retry or skip and test again later in the **Settings panel**.
+
+    When connecting to a NAS for the first time, you must verify and trust its SSH host fingerprint; credentials will not be sent to an untrusted host. If the check reports that the host is not trusted, go to the **NAS Devices** tab in the **Settings panel**, verify the fingerprint, and click "I verified it; trust this host." For details, see [NAS and SSH terminal](/en/digitallab/user-guide/nas-ssh-terminal).
+  </Step>
+</Steps>
+
+## Daily use
+
+### View the Dashboard
+
+After onboarding, the main interface shows the [Dashboard](/en/digitallab/user-guide/dashboard) by default. Here you can see:
+
+- Real-time monitoring metrics for CPU, memory, disk, and network
+- 24-hour performance history charts
+- A top-15 process list
+- Status cards for configured NAS devices
+
+### Open the Device Center
+
+Click **Devices** in the sidebar to see a full overview of local hardware information:
+
+- CPU model, cores, threads, frequency
+- Memory capacity, type, frequency
+- GPU model, VRAM, temperature
+- Disk model, capacity, health
+- Display, network adapter, and system information
+
+### Use the AI Assistant
+
+<Warning>
+  The AI Assistant is currently **in testing**; a notice appears the first time you open it. It currently operates in conversation mode and does not include Agent tool-calling capabilities.
+</Warning>
+
+To use the AI Assistant, first configure one of the following in the **AI Config** tab of the **Settings panel**:
+
+- **Ollama Local**: enter the local Ollama address (default `http://localhost:11434`) and model name (for example, `qwen2.5:7b-instruct-q4_K_M`)
+- **Cloud API**: enter the address, API Key, and model name for an OpenAI-compatible API (such as DeepSeek). Remote endpoints must use `https`; local loopback addresses may use `http`
+
+When you change the AI provider, service address, or API Key and other sensitive settings, the app displays the system native confirmation dialog. After configuration is complete, return to the AI Assistant panel to start a conversation. AI automatically injects the current system status as context to help you answer questions related to CPU, memory, disk, hardware, and NAS.
+
+<Info>
+  If you use a cloud model, the conversation content and system status summary are sent with the request to the service endpoint you configured. For a full explanation of the AI data flow, see [AI data flow](/en/digitallab/privacy/ai-data-flow).
+</Info>
+
+### Connect via SSH terminal
+
+<Warning>
+  The SSH terminal is currently **in testing**; a notice appears the first time you open it. SSH sessions do not yet support automatic reconnection.
+</Warning>
+
+Before using the SSH terminal, make sure the NAS device has SSH enabled, credentials are configured correctly in the **Settings panel**, and the host fingerprint is trusted. Click **Terminal** in the sidebar; the panel lists NAS devices that are currently online. Click the button on a device entry, confirm the system dialog "打开 SSH 终端？" ("Open SSH terminal?"; in v1.6.0 this dialog is shown in Chinese), and the terminal runs in a separate "DigitalLab Terminal" window. Closing that window ends the SSH session; reopen it from the Terminal panel when needed.
+
+## Next steps
+
+- Want to adjust monitoring thresholds, theme, or hardware acceleration? Go to [Settings and preferences](/en/digitallab/user-guide/settings)
+- Want to learn more about privacy and data storage? Check out the [Privacy policy](/en/digitallab/privacy/privacy-policy)
+- Have a problem or suggestion? Send feedback via [GitHub Issues](https://github.com/ZWWF0906/Digital-Lab/issues) or email [**ZWWF0906@outlook.com**](mailto:ZWWF0906@outlook.com)

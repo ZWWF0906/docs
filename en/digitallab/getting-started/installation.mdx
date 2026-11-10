@@ -1,0 +1,61 @@
+---
+title: "Installation"
+description: "Install DigitalLab via the Microsoft Store or the v1.6.0 GitHub installer, plus update and uninstall instructions."
+sidebarTitle: "Installation"
+---
+
+DigitalLab's distribution channels changed after v1.6.0. The instructions below are for end users; developers who need to build from source should see [Build and packaging](/en/digitallab/development/build-and-packaging).
+
+| Version | Installation and update channel |
+| --- | --- |
+| v1.6.1 and later | Install and update through the [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) only |
+| v1.6.0 and earlier | Download the standalone installer from [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases); v1.6.0 is the last version to provide a GitHub standalone installer, and the installer file name is `DigitalLab.Setup.1.6.0.exe` |
+
+GitHub no longer provides standalone installers for v1.6.1 and later; the repository continues to serve as the source code, documentation, and collaboration platform.
+
+## Install via Microsoft Store
+
+<Steps>
+  <Step title="Open the Store page">
+    Visit [Microsoft Store - DigitalLab](https://apps.microsoft.com/detail/9n0rtlx1bcp5), or search for DigitalLab in the Microsoft Store.
+  </Step>
+  <Step title="Install">
+    Install from the Store page. Future official releases are also updated through the Microsoft Store.
+  </Step>
+  <Step title="Complete initial setup">
+    After launching the app, follow the first-run onboarding to complete setup, or add NAS connection information in the NAS Devices tab of the **Settings panel**. See [Quickstart](/en/quickstart).
+  </Step>
+</Steps>
+
+## Install v1.6.0 via GitHub installer
+
+<Steps>
+  <Step title="Download the installer">
+    Go to [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) and download `DigitalLab.Setup.1.6.0.exe` for v1.6.0.
+  </Step>
+  <Step title="Run the installer">
+    The installer requires **administrator privileges** and installs to a per-machine (all users) directory. You can change the installation directory during setup (it is not a one-click install).
+  </Step>
+  <Step title="Configure the NAS device">
+    After launching the app, open the **Settings panel** and add your NAS connection information in the NAS Devices tab.
+  </Step>
+</Steps>
+
+<Warning>
+  The GitHub installer will not receive official releases for v1.6.1 and later. To continue receiving updates, switch to the Microsoft Store channel.
+</Warning>
+
+## No extra dependencies required
+
+Regular users do **not** need to install Python or Node.js; all runtime dependencies are already bundled in the release package.
+
+## Uninstall
+
+When uninstalling DigitalLab, be aware of the following data that may remain:
+
+- The uninstaller **does not automatically delete** the `%APPDATA%\DigitalLab\` and `%APPDATA%\digital-lab\` directories.
+- These directories contain app configuration, protected credentials, monitoring data, AI chat history, AI memory, and interface preference settings.
+- `launchers.json` (quick launcher configuration) in the program directory is written by the app at runtime; whether the uninstaller removes it has not been verified. After uninstalling, check the original installation directory for any leftovers and delete them manually if necessary.
+- To thoroughly clean up data, manually delete the two `%APPDATA%` directories after uninstalling.
+
+For details, see [Data processing and storage](/en/digitallab/privacy/data-storage).

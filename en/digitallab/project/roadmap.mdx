@@ -1,0 +1,51 @@
+---
+title: "Roadmap"
+description: "Completed core milestones and planned future directions for DigitalLab."
+---
+
+DigitalLab's feature evolution is divided into completed milestones and planned directions that have not yet been released. The first two sections are derived from the Roadmap chapter in the repository README, with no additional commitments or timelines added.
+
+## Completed milestones
+
+| Milestone | Version |
+| --- | --- |
+| Realtime system monitoring | v1.0.0 |
+| Hardware information center | v1.0.0 |
+| NAS SSH management | v1.0.0 |
+| AI Assistant | v1.0.0 |
+| Electron + Python architecture | v1.0.0 |
+| Light theme and theme switching | v1.1.0 |
+| Feedback and report entry point | v1.1.0 |
+| Personal Digital Memory | v1.6.0 |
+
+## Planned directions
+
+<Warning>
+  The following items have not yet been released, and no release date is given in the source documentation. They reflect current product direction only and do not constitute a feature commitment.
+</Warning>
+
+- Agent automation capabilities
+- Plugin system
+- Support for more NAS platforms
+- Data analysis and timeline system
+
+## Other released capabilities (from the changelog)
+
+The README Roadmap does not separately list the following capabilities; they are compiled from user-visible additions in the changelog.
+
+| Capability | Initial version | Description |
+| --- | --- | --- |
+| AI local memory | v1.2.0 | Optional feature, off by default |
+| Startup splash animation | v1.3.0 | Hexagon stroke and self-check lighting, adapted to dark and light themes |
+| Font localization | v1.3.0 | Orbitron, Inter, JetBrains Mono |
+| Multilingual interface (Simplified Chinese / English / Japanese) | v1.4.0 | Switchable at any time in Settings |
+| First-run onboarding | v1.4.0 | Three-step initial setup |
+| Threshold alert notifications | v1.4.0 | System notifications when CPU, memory or disk stays above the configured limit |
+| AI chat history | v1.5.0 | Saved locally and restored after restart |
+| AI memory structuring | v1.5.0 | Entries now carry id, tag and source fields |
+| Terminal connection persistence | v1.5.0 | Switching panels and hiding the window no longer drops the session |
+| Memory and path security hardening | v1.6.0 | Memory de-duplication and chat-history concurrent writes no longer lose data; history writes are atomic; memory directory and CA bundle reject UNC, device paths, traversal and symlink redirection; runtime data moved to the user data directory |
+| Credential secure storage | v1.6.0 | AI/NAS credentials use Windows user-scoped secure storage; old plaintext is migrated and cleared |
+| Local memory retrieval | v1.6.0 | Pure local keyword + structured metadata relevance ranking (phase one, no vector library introduced) |
+
+For detailed changes, see the [Changelog](/en/digitallab/project/changelog).

@@ -1,0 +1,133 @@
+---
+title: "リポジトリ構成"
+description: "DigitalLab ソースコードリポジトリのディレクトリ構成と主要ファイルの説明。"
+sidebarTitle: "リポジトリ構成"
+---
+
+リポジトリ構成を理解することで、フロントエンドのパネル、Python バックエンドのモジュール、およびビルド設定を素早く見つけることができます。
+
+## プロジェクト構成図
+
+以下のディレクトリ構成は README に記載されている内容をベースにしており、README には記載されていないがリポジトリに実際に存在するファイルも補足しています。
+
+```text
+DigitalLab/
+├── main.js                 # Electron メインプロセス（ウィンドウ、トレイ、IPC、Python 子プロセス管理）
+├── main.py                 # Python バックエンドエントリ（引数解析、HTTP サービスとプロセス管理）
+├── preload.js              # IPC ブリッジ（window.digitalLab 安全インターフェースを公開）
+├── renderer.js             # Dashboard レンダリングプロセスの外殻（パネルルーティング、保活、i18n）
+├── renderer-terminal.js    # 独立ターミナルウィンドウのレンダリングプロセス（xterm 統合）
+├── preload-terminal.js     # ターミナルウィンドウ IPC ブリッジ（window.terminalAPI を公開）
+├── dashboard.html          # メイン画面 HTML
+├── terminal.html           # 独立ターミナルウィンドウ HTML（xterm 統合）
+├── styles.css              # グローバルスタイル（Emerald テーマ体系：ダークがデフォルト / ライトはオプション）
+├── onboarding.js           # 初回起動ガイド（3 ステップのウィザード）
+├── splash.js               # 起動時のスプラッシュアニメーションとセルフチェック状態の駆動
+├── theme-init.js           # テーマ初期化（最初のフレーム前にダーク/ライトを適用）
+├── lang-init.js            # 言語初期化（最初のフレーム前に設定言語を適用）
+├── boot-text.js            # スプラッシュオーバーレイの静的テキスト置換
+├── package.json            # Node プロジェクト設定とビルド設定
+├── requirements.txt        # Python 依存
+├── backend.spec            # PyInstaller パッケージング仕様
+├── README.md               # プロジェクト説明（簡体字中国語）
+├── README.en-US.md         # プロジェクト説明（英語）
+├── README.ja-JP.md         # プロジェクト説明（日本語）
+├── CHANGELOG.md            # 変更履歴（英語）
+├── CHANGELOG.zh-CN.md      # 変更履歴（中国語）
+├── CHANGELOG.ja-JP.md      # 変更履歴（日本語）
+├── PRIVACY.md              # プライバシーポリシー（多言語）
+├── LICENSE                 # ライセンス（ISC）
+├── config.json             # 公開設定
+├── config.schema.json      # 設定検証ルール
+├── .gitignore              # Git 無視ルール
+├── i18n.js                 # メインプロセスの多言語ユーティリティ
+├── locales/                # フロントエンドとメインプロセスで共用する多言語辞書
+│   ├── index.js            # 言語一覧とデフォルト言語の解決
+│   ├── zh-CN.js            # 簡体字中国語の辞書
+│   ├── en-US.js            # 英語の辞書
+│   └── ja-JP.js            # 日本語の辞書
+├── build/                  # ビルドリソース
+│   ├── icons/              # アプリアイコンとトレイアイコン（icon.ico、StoreLogo.png など）
+│   └── fonts/              # フォントファイル（Inter、JetBrains Mono、Orbitron）
+├── scripts/                # ビルドスクリプト
+│   ├── build-backend.ps1   # PyInstaller バックエンドパッケージングスクリプト（SHA256 検証を含む）
+│   └── build-windows.ps1   # Windows 完全ビルドスクリプト（バージョンとリソース一覧の検証）
+├── core/                   # Python バックエンドモジュール
+│   ├── __init__.py         # パッケージ公開インターフェース
+│   ├── config.py           # 設定読み込みと二層ストレージ
+│   ├── config_validator.py # 設定項目の検証
+│   ├── collector.py        # デュアルスレッドのシステム監視収集
+│   ├── monitor.py          # パフォーマンス監視デーモン
+│   ├── hardware.py         # ハードウェア情報収集
+│   ├── hardware_classifier.py  # ハードウェアモデルの分類
+│   ├── ai_client.py        # AI クライアント（Ollama / OpenAI）
+│   ├── ai_memory.py        # AI ローカルメモリ（JSONL ストレージ）
+│   ├── chat_store.py       # AI 会話履歴の保存（JSONL ストレージ）
+│   ├── nas_monitor.py      # NAS リモート監視（SSH）
+│   ├── agent_tools.py      # Agent 読み取り専用ツールのインフラ（登録、検証、スケジューリング）
+│   ├── secret_store.py     # Windows DPAPI による認証情報保護（SSH / AI 認証情報の暗号化保存）
+│   ├── net_policy.py       # AI ネットワークエンドポイントのセキュリティポリシー（ループバック / プライベートセグメント / パブリックネットワークの検証）
+│   ├── path_policy.py      # ユーザー設定可能パスのローカルセキュリティポリシー（絶対パス、パストラバーサル防止）
+│   ├── ssh_trust.py        # SSH ホストの身元信頼ライブラリ（フィンガープリントの検証と信頼アーカイブ）
+│   ├── logger.py           # ログシステム
+│   ├── system_state.py     # グローバル状態管理
+│   ├── event_bus.py        # イベントバス
+│   ├── memory.py           # 会話メモリ管理
+│   ├── snapshot.py         # パフォーマンススナップショットの保存
+│   ├── renderer.py         # CLI レンダラー
+│   ├── reporter.py         # グラフ生成
+│   ├── launcher.py         # クイックランチャー
+│   ├── daemon.py           # デーモン管理
+│   └── test_hook_policy.js # テストフックの有効化ポリシー（本番環境の安全境界）
+└── panels/                 # フロントエンドパネル（レンダリングプロセスが必要に応じて読み込み）
+    ├── index.js            # パネルレジストリ
+    ├── dashboard.js        # ダッシュボード
+    ├── device-center.js    # デバイスセンター
+    ├── ai-assistant.js     # AI アシスタント
+    ├── terminal.js         # SSH ターミナルパネル（一覧 + 独立ウィンドウを開く）
+    ├── safe-dom.js         # レンダリングプロセスの安全な出力ユーティリティ（HTML / 属性 / URL のコンテキストによるエスケープ）
+    └── settings.js         # 設定パネル
+```
+
+## リポジトリに存在するが README 構成図に記載されていないファイル
+
+| ファイル/ディレクトリ | 説明 |
+| --- | --- |
+| `i18n.js` | メインプロセス側の多言語 `t()` 実装。レンダリングプロセスと `locales/` 以下の辞書を共用 |
+| `locales/` | `index.js`、`zh-CN.js`、`en-US.js`、`ja-JP.js` を含み、3 言語をサポート |
+| `build/fonts/` | ビルド時にインストーラーに含まれるフォントリソースのディレクトリ |
+| `build/icons/` | アプリアイコン（`icon.ico`、`icon.png`、`icon_512.png`）とトレイアイコン（`icon_tray.png`）、および Microsoft Store 各サイズの Logo |
+| `backend.spec` | PyInstaller の仕様ファイル。Python バックエンドを `backend.exe` としてパッケージングする方法を定義 |
+| `core/__init__.py` | Python パッケージのエントリ。`Config`、`get_config` などのシンボルを公開 |
+| `core/chat_store.py` | AI 会話履歴の JSONL 保存と読み込み（デフォルトで有効、200 件を保持） |
+| `core/config_validator.py` | schema に基づく設定項目の検証とデフォルト値の補完 |
+| `core/ai_memory.py` | AI 長期メモリの JSONL 保存（デフォルトで無効）。`id`、`tags`、`source` フィールドを含む |
+| `core/agent_tools.py` | Agent 読み取り専用ツールのインフラ：登録と発見、JSON Schema パラメータの検証、実行スケジューリング、データスコープの宣言 |
+| `core/secret_store.py` | Windows DPAPI による認証情報の暗号化保護。保存形式は `dpapi:v1:<base64>` で、平文フォールバックは拒否 |
+| `core/net_policy.py` | AI ネットワークエンドポイントのセキュリティポリシー：ループバック、プライベートセグメント、パブリック IP、TLS 要件を検証。純粋関数でネットワーク要求は行わない |
+| `core/path_policy.py` | ユーザー設定可能パスのセキュリティポリシー：UNC、相対パス、ドットセグメントのトラバーサルを拒否。シンボリックリンクを解決してから検証 |
+| `core/ssh_trust.py` | SSH ホストの身元信頼ライブラリ：サーバーの公開鍵フィンガープリントを保存。未知のホストは先にハンドシェイクしてから確認し、変化があれば拒否 |
+| `core/test_hook_policy.js` | テストフックの有効化ポリシー：非パッケージ環境 + 明示的なフラグのみ有効化を許可。本番ビルドでは強制的に無効 |
+| `main.py` | Python バックエンドエントリ：引数解析、Python バージョンチェック、Windows コンソール設定、モジュールのインポート |
+| `renderer.js` | Dashboard レンダリングプロセスの外殻：パネルルーティング、保活キャッシュ（ターミナルパネルの detach / attach）、i18n 統合 |
+| `renderer-terminal.js` | 独立ターミナルウィンドウのレンダリングプロセス：xterm.js 統合、サイズの自動調整、入力/出力イベントの処理 |
+| `preload-terminal.js` | ターミナルウィンドウの最小 IPC ブリッジ：`terminalAPI`（attach / input / resize / close）を公開 |
+| `terminal.html` | 独立ターミナルウィンドウの HTML。CSP ポリシーと xterm.css を含み、`renderer-terminal.js` を読み込む |
+| `onboarding.js` | 初回起動ガイド：言語選択、NAS デバイス設定、接続テスト（3 ステップのウィザード） |
+| `splash.js` | 起動時のスプラッシュアニメーション：実際の状態に基づいて駆動、固定のリズムで点灯、タイムアウトのフォールバック、フェードアウト完了イベント |
+| `theme-init.js` | テーマ初期化スクリプト：最初のフレーム前に `config.json` を読み込んでダーク/ライトを適用し、localStorage に書き戻す |
+| `lang-init.js` | 言語初期化スクリプト：最初のフレーム前に `config.json` → localStorage → システム言語の優先順位で設定 |
+| `boot-text.js` | スプラッシュオーバーレイの静的テキスト置換：解析フェーズで同期的に完了し、`data-i18n` 属性に依存 |
+| `panels/safe-dom.js` | レンダリングプロセスの安全な出力：HTML テキスト、属性、URL の各コンテキストを区別し、`javascript:` などの危険なプロトコルを拒否 |
+| `scripts/build-backend.ps1` | PyInstaller バックエンドパッケージング：`backend.spec` を呼び出し、`backend.exe` の存在と SHA256 を検証 |
+| `scripts/build-windows.ps1` | Windows 完全ビルド：`package.json` のバージョン番号とリソース一覧を検証し、バックエンドを先にパッケージングしてから Electron をビルド |
+| `LICENSE` | ISC ライセンス |
+| `PRIVACY.md` | プライバシーポリシー。簡体字中国語、英語、日本語の 3 言語バージョンを含む |
+| `.gitignore` | Git 無視ルール |
+
+## モジュール間の関連
+
+- `main.js` と `main.py` のプロセス間通信の詳細は [Electron と Python の統合](/ja/digitallab/architecture/electron-python) を参照してください。
+- `preload.js` は IPC ブリッジとして、バックエンドの機能をレンダリングプロセスに安全に公開します。
+- `core/system_state.py` と `core/event_bus.py` は状態管理の中核であり、関連内容は [システム状態とイベント管理](/ja/digitallab/architecture/system-state) を参照してください。
+- フロントエンドのパネル読み込みメカニズムは [モジュール式パネルアーキテクチャ](/ja/digitallab/architecture/panels) を参照してください。

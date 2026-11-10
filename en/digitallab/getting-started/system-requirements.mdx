@@ -1,0 +1,32 @@
+---
+title: "System requirements"
+description: "Minimum system requirements for DigitalLab: operating system, processor, memory, graphics, and storage."
+sidebarTitle: "System requirements"
+---
+
+DigitalLab is currently available for the Windows desktop platform. Below are the minimum system requirements for running DigitalLab as listed in the README.
+
+## Minimum configuration
+
+| Requirement | Minimum configuration |
+| --- | --- |
+| Operating system | Windows 10 or later |
+| Processor | x64 architecture, dual-core 1.5 GHz |
+| Memory | 4 GB |
+| Graphics | Windows 10-compatible GPU/display driver; hardware acceleration can be disabled in Settings |
+| Storage | 2 GB of available space |
+
+## Additional notes
+
+- **No need to install Python or Node.js**: all dependencies are bundled in the release package, so regular users do not need to install additional runtimes.
+- **No specific VRAM required**: DigitalLab itself does not require a specific VRAM amount. If you use a local Ollama model, GPU and memory requirements depend on the model you run.
+- **Hardware acceleration is off by default**: the app disables hardware acceleration by default to improve compatibility in virtual-machine environments. You can turn it back on in the **Settings panel**; a restart is required after changing this setting.
+- **Data directory**: runtime data is written to the current user's `%APPDATA%\DigitalLab\` and `%APPDATA%\digital-lab\`; the installation directory only keeps program files and a small number of local files such as `launchers.json`. For details, see [Data processing and storage](/en/digitallab/privacy/data-storage).
+
+## Developer environment
+
+If you want to develop or build DigitalLab from source, Node.js 18+ and Python 3.10+ are required. For detailed developer environment setup, see [Development environment](/en/digitallab/development/environment).
+
+<Note>
+  The runtime environment listed at the top of the `requirements.txt` file is Windows 7/8/10/11 x64 and Python 3.7+, which differs from the "Windows 10+ / Python 3.10+" in the README. **Please follow the system requirements in the README**; the README is the official system requirements statement for the current version.
+</Note>

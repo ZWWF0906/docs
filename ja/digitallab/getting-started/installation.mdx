@@ -1,0 +1,61 @@
+---
+title: "インストール"
+description: "Microsoft Store または v1.6.0 GitHub インストーラーから DigitalLab をインストールする方法、およびアップデートとアンインストールの手順。"
+sidebarTitle: "インストール"
+---
+
+DigitalLab の配布チャネルは v1.6.0 以降変更されました。以下の説明はエンドユーザー向けです。開発者がソースコードからビルドする場合は [ビルドとパッケージング](/ja/digitallab/development/build-and-packaging) を参照してください。
+
+| バージョン | インストールおよびアップデートチャネル |
+| --- | --- |
+| v1.6.1 以降 | [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) のみでインストールおよびアップデート |
+| v1.6.0 およびそれ以前 | [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) から単体インストーラーをダウンロード: v1.6.0 は GitHub 単体インストーラーを提供する最後のバージョンで、インストーラーのファイル名は `DigitalLab.Setup.1.6.0.exe` です |
+
+GitHub では v1.6.1 以降の単体インストーラーは提供されず、リポジトリは引き続きソースコード、ドキュメント、コラボレーションの場として運用されます。
+
+## Microsoft Store からインストール
+
+<Steps>
+  <Step title="ストアページを開く">
+    [Microsoft Store - DigitalLab](https://apps.microsoft.com/detail/9n0rtlx1bcp5) にアクセスするか、Microsoft Store で DigitalLab を検索してください。
+  </Step>
+  <Step title="インストール">
+    ストアページでインストールしてください。今後の正式版アップデートも Microsoft Store から取得します。
+  </Step>
+  <Step title="初期設定を完了する">
+    アプリを起動したら、初回起動ガイドに従って設定を完了するか、**設定パネル**の NAS デバイスページで NAS の接続情報を追加してください。[クイックスタート](/ja/quickstart) を参照してください。
+  </Step>
+</Steps>
+
+## GitHub インストーラーで v1.6.0 をインストール
+
+<Steps>
+  <Step title="インストーラーをダウンロード">
+    [GitHub Releases](https://github.com/ZWWF0906/Digital-Lab/releases) にアクセスし、v1.6.0 の `DigitalLab.Setup.1.6.0.exe` をダウンロードしてください。
+  </Step>
+  <Step title="インストーラーを実行">
+    インストーラーには**管理者権限**が必要で、per-machine（すべてのユーザー）ディレクトリにインストールされます。インストール中にインストール先を変更できます（ワンクリックインストールではありません）。
+  </Step>
+  <Step title="NAS デバイスを設定">
+    アプリを起動したら、**設定パネル**を開き、NAS デバイスページで NAS の接続情報を追加してください。
+  </Step>
+</Steps>
+
+<Warning>
+  GitHub インストーラーは v1.6.1 以降の正式版を受け取ることはありません。アップデートを継続して取得するには、Microsoft Store チャネルに切り替えてください。
+</Warning>
+
+## 追加の依存関係は不要
+
+一般ユーザーは**Python や Node.js をインストールする必要はありません**。すべてのランタイム依存関係は配布パッケージに内包されています。
+
+## アンインストール
+
+DigitalLab をアンインストールする際、以下のデータ残存に注意してください。
+
+- アンインストーラーは `%APPDATA%\DigitalLab\` と `%APPDATA%\digital-lab\` の 2 つのディレクトリを**自動で削除しません**
+- これらのディレクトリには、アプリの設定、保護された認証情報、監視データ、AI 会話履歴、AI メモリ、および UI の設定が保存されています
+- プログラムディレクトリ内の `launchers.json`（クイックスターター設定）はアプリの実行時に書き込まれるため、アンインストーラーがこれを削除するかどうかは確認されていません。アンインストール後は元のインストールディレクトリを確認し、残存があれば手動で削除してください
+- データを完全に削除するには、アンインストール後に上記の 2 つの `%APPDATA%` ディレクトリを手動で削除してください
+
+詳細は [データ処理と保存](/ja/digitallab/privacy/data-storage) を参照してください。

@@ -1,0 +1,87 @@
+---
+title: "Running locally"
+description: "Clone from source, start development mode, and troubleshoot common issues."
+sidebarTitle: "Local run"
+---
+
+Running locally requires starting both the Electron main process and the Python backend. In development mode, `npm start` automatically launches the Python child process.
+
+## Get the source code
+
+```bash
+git clone https://github.com/ZWWF0906/Digital-Lab.git
+cd Digital-Lab
+```
+
+## Install dependencies
+
+```bash
+# Frontend and Electron dependencies
+npm install
+
+# Python dependencies
+pip install -r requirements.txt
+```
+
+## Start development mode
+
+```bash
+npm start
+```
+
+This command maps to `electron .` in `package.json`. After launch, the Electron main process locates the Python backend in two different ways depending on the mode:
+
+1. **Packaged mode**: Uses the built-in `backend.exe --json-mode`.
+2. **Development mode** (`npm start`): Always uses the system `python` command to run `python main.py --json-mode`, regardless of whether `backend.exe` exists in the current directory.
+
+Therefore, in development mode, ensure the system `python` is in `PATH` and meets the Python 3.10+ version requirement.
+
+## Python backend CLI mode
+
+`main.py` contains legacy code from early development (legacy-0.0.1), and also supports command-line subcommands. The following table lists verified subcommand names and their purposes (`dlab` is the entry program name):
+
+| Subcommand | Purpose |
+| --- | --- |
+| `dlab init` | Initialize directory structure |
+| `dlab status` | Show system status |
+| `dlab config` | Generate default configuration file |
+| `dlab state` | View `system_state` (global state center) |
+| `dlab state monitor` | View the monitor namespace |
+| `dlab state hardware` | View the hardware namespace |
+| `dlab state snapshot` | View the snapshot namespace |
+| `dlab state logs` | View the logs namespace |
+| `dlab hardware info` | Show cached hardware information |
+| `dlab hardware refresh` | Force refresh hardware information |
+| `dlab monitor` | View system monitoring (supports `--live`, `--daemon`, and other options) |
+| `dlab launcher` | Launch quick panel |
+| `dlab report` | Generate analysis report |
+| `dlab snapshot` | System snapshot management (`list`, `create`, `delete`, `compare`, `report`) |
+
+<Note>
+  The commands in the list above are not part of the development plan. To ensure client performance and user experience, they will be removed in a future version.
+</Note>
+
+## Troubleshooting
+
+The following are common scenarios verified from the source code:
+
+**Python child process keeps crashing**
+
+`main.js` implements an automatic retry mechanism: after the Python process exits abnormally, the main process waits 2 seconds before attempting to relaunch, up to a maximum of 3 retries. Once the backend returns a valid state containing hardware information for the first time, the retry counter resets. After the limit is exceeded, the main process sends a `python-status` event to the renderer to notify the user that the backend is unavailable. The main process log records only the Python process exit code and the extracted tag and character count (`text.length`) for each stderr segment; it does not write the original stderr text or tail content.
+
+**View main process logs**
+
+Electron main process logs are written to `%APPDATA%\digital-lab\digital-lab.log` (implemented by `writeLog` in `main.js`). This file records window lifecycle events, exception summaries, I/O error summaries, and more. The single file limit is 5 MB, with automatic rotation.
+
+**Development mode cannot find Python**
+
+If `npm start` reports an error that the Python child process cannot be started, check the following:
+
+- Whether the `python` command is in the system `PATH`.
+- Whether the Python version meets the 3.10+ requirement in the README.
+- Whether the command is executed from the project root (development mode relies on `__dirname` to locate `main.py`).
+
+**Known limitations**
+
+- The SSH terminal and AI assistant are currently in testing. A testing-phase notice appears the first time you enter the corresponding panel.
+- SSH sessions do not support automatic reconnection yet.

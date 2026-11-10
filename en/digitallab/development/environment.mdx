@@ -1,0 +1,65 @@
+---
+title: "Development environment"
+description: "Node.js, Python, and dependency version requirements for setting up the DigitalLab development environment."
+sidebarTitle: "Environment"
+---
+
+DigitalLab uses an Electron + Python dual-process architecture. Before you start developing, you need to prepare both Node.js and Python environments.
+
+## Requirements
+
+| Component | Version requirement |
+| --- | --- |
+| Node.js | 18+ |
+| Python | 3.10+ |
+| Operating system | Build target is Windows (`electron-builder --win`) |
+
+<Note>
+  The comment at the top of `requirements.txt` states the runtime environment is Windows 7/8/10/11 x64 and Python 3.7+, and the minimum version checked in `core/config.py` is Python 3.7. The README requires Python 3.10+ and Windows 10+, and this documentation follows the README requirements. If you use a Python version between 3.7 and 3.9, you may encounter compatibility issues.
+</Note>
+
+## Node.js dependencies
+
+Frontend and desktop layer dependencies are installed with `npm install`. Key packages are listed below (from `package.json`):
+
+| Package name | Purpose |
+| --- | --- |
+| `electron` | Electron main process and renderer process runtime |
+| `electron-builder` | Application packaging and installer generation |
+| `@xterm/xterm` | SSH terminal frontend rendering |
+| `@xterm/addon-fit` | Terminal size auto-fit |
+| `@fontsource-variable/inter` | UI font (Inter) |
+| `@fontsource-variable/jetbrains-mono` | Terminal monospace font (JetBrains Mono) |
+| `@fontsource-variable/orbitron` | Decorative font (Orbitron) |
+
+## Python dependencies
+
+Python backend dependencies are listed in `requirements.txt`. Install them with `pip install -r requirements.txt`:
+
+| Package name | Minimum version | Purpose |
+| --- | --- | --- |
+| `psutil` | 5.8 | System monitoring (CPU, memory, disk, process collection) |
+| `paramiko` | 3.4 | SSH remote monitoring and terminal connections |
+| `flask` | 2.0 | Optional Web Dashboard API |
+| `flask-cors` | 4.0 | Web Dashboard CORS support |
+| `matplotlib` | 3.3 | Chart generation (`report` command) |
+
+The following dependencies are optional. Installing them improves hardware information collection accuracy:
+
+| Package name | Purpose |
+| --- | --- |
+| `nvidia-ml-py` (>=12.0) | NVIDIA GPU temperature and utilization (requires NVIDIA driver) |
+| `py-cpuinfo` (>=9.0) | Precise CPU model identification |
+| `pyamdgpuinfo` (>=1.0) | AMD GPU information collection (requires ROCm/driver) |
+
+## Packaging dependencies
+
+The packaging instructions in the README use `pyinstaller backend.spec` to generate `backend.exe`, but `pyinstaller` is **not listed** in `requirements.txt`. If you need to run packaging, install it separately:
+
+```bash
+pip install pyinstaller
+```
+
+## Platform limitations
+
+The current packaging configuration targets Windows only (`electron-builder --win`, NSIS target). This documentation does not cover build steps for other operating systems.

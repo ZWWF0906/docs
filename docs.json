@@ -1,116 +1,253 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "ZWWF-Labs",
+  "name": "ZWWF Labs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#2563EB",
+    "light": "#60A5FA",
+    "dark": "#1D4ED8"
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    },
-    "tabs": [
+    "languages": [
       {
-        "tab": "ZWWF Labs",
-        "pages": [
-          "index"
+        "language": "zh-Hans",
+        "default": true,
+        "tabs": [
+          {
+            "tab": "ZWWF Labs",
+            "pages": [
+              "index"
+            ]
+          },
+          {
+            "tab": "DigitalLab",
+            "groups": [
+              {
+                "group": "快速开始",
+                "pages": [
+                  "digitallab/getting-started/overview",
+                  "digitallab/getting-started/features",
+                  "digitallab/getting-started/system-requirements",
+                  "digitallab/getting-started/installation",
+                  "quickstart"
+                ]
+              },
+              {
+                "group": "用户指南",
+                "pages": [
+                  "digitallab/user-guide/dashboard",
+                  "digitallab/user-guide/device-center",
+                  "digitallab/user-guide/nas-ssh-terminal",
+                  "digitallab/user-guide/ai-assistant",
+                  "digitallab/user-guide/settings"
+                ]
+              },
+              {
+                "group": "架构",
+                "pages": [
+                  "digitallab/architecture/overview",
+                  "digitallab/architecture/electron-python",
+                  "digitallab/architecture/jsonl-ipc",
+                  "digitallab/architecture/system-state",
+                  "digitallab/architecture/panels",
+                  "digitallab/architecture/configuration-storage"
+                ]
+              },
+              {
+                "group": "开发者指南",
+                "pages": [
+                  "digitallab/development/environment",
+                  "digitallab/development/running-locally",
+                  "digitallab/development/repository-structure",
+                  "digitallab/development/build-and-packaging",
+                  "digitallab/development/contributing"
+                ]
+              },
+              {
+                "group": "隐私与安全",
+                "pages": [
+                  "digitallab/privacy/privacy-policy",
+                  "digitallab/privacy/data-storage",
+                  "digitallab/privacy/ai-data-flow",
+                  "digitallab/privacy/sensitive-information",
+                  "digitallab/privacy/security-limitations"
+                ]
+              },
+              {
+                "group": "项目",
+                "pages": [
+                  "digitallab/project/changelog",
+                  "digitallab/project/roadmap",
+                  "digitallab/project/license"
+                ]
+              }
+            ]
+          }
         ]
       },
       {
-        "tab": "DigitalLab",
-        "groups": [
+        "language": "en",
+        "tabs": [
           {
-            "group": "快速开始",
+            "tab": "ZWWF Labs",
             "pages": [
-              "digitallab/getting-started/overview",
-              "digitallab/getting-started/features",
-              "digitallab/getting-started/system-requirements",
-              "digitallab/getting-started/installation",
-              "quickstart"
+              "en/index"
             ]
           },
           {
-            "group": "用户指南",
+            "tab": "DigitalLab",
+            "groups": [
+              {
+                "group": "Getting started",
+                "pages": [
+                  "en/digitallab/getting-started/overview",
+                  "en/digitallab/getting-started/features",
+                  "en/digitallab/getting-started/system-requirements",
+                  "en/digitallab/getting-started/installation",
+                  "en/quickstart"
+                ]
+              },
+              {
+                "group": "User guide",
+                "pages": [
+                  "en/digitallab/user-guide/dashboard",
+                  "en/digitallab/user-guide/device-center",
+                  "en/digitallab/user-guide/nas-ssh-terminal",
+                  "en/digitallab/user-guide/ai-assistant",
+                  "en/digitallab/user-guide/settings"
+                ]
+              },
+              {
+                "group": "Architecture",
+                "pages": [
+                  "en/digitallab/architecture/overview",
+                  "en/digitallab/architecture/electron-python",
+                  "en/digitallab/architecture/jsonl-ipc",
+                  "en/digitallab/architecture/system-state",
+                  "en/digitallab/architecture/panels",
+                  "en/digitallab/architecture/configuration-storage"
+                ]
+              },
+              {
+                "group": "Developer guide",
+                "pages": [
+                  "en/digitallab/development/environment",
+                  "en/digitallab/development/running-locally",
+                  "en/digitallab/development/repository-structure",
+                  "en/digitallab/development/build-and-packaging",
+                  "en/digitallab/development/contributing"
+                ]
+              },
+              {
+                "group": "Privacy and security",
+                "pages": [
+                  "en/digitallab/privacy/privacy-policy",
+                  "en/digitallab/privacy/data-storage",
+                  "en/digitallab/privacy/ai-data-flow",
+                  "en/digitallab/privacy/sensitive-information",
+                  "en/digitallab/privacy/security-limitations"
+                ]
+              },
+              {
+                "group": "Project",
+                "pages": [
+                  "en/digitallab/project/changelog",
+                  "en/digitallab/project/roadmap",
+                  "en/digitallab/project/license"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "language": "ja",
+        "tabs": [
+          {
+            "tab": "ZWWF Labs",
             "pages": [
-              "digitallab/user-guide/dashboard",
-              "digitallab/user-guide/device-center",
-              "digitallab/user-guide/nas-ssh-terminal",
-              "digitallab/user-guide/ai-assistant",
-              "digitallab/user-guide/settings"
+              "ja/index"
             ]
           },
           {
-            "group": "架构",
-            "pages": [
-              "digitallab/architecture/overview",
-              "digitallab/architecture/electron-python",
-              "digitallab/architecture/jsonl-ipc",
-              "digitallab/architecture/system-state",
-              "digitallab/architecture/panels",
-              "digitallab/architecture/configuration-storage"
-            ]
-          },
-          {
-            "group": "开发者指南",
-            "pages": [
-              "digitallab/development/environment",
-              "digitallab/development/running-locally",
-              "digitallab/development/repository-structure",
-              "digitallab/development/build-and-packaging",
-              "digitallab/development/contributing"
-            ]
-          },
-          {
-            "group": "隐私与安全",
-            "pages": [
-              "digitallab/privacy/privacy-policy",
-              "digitallab/privacy/data-storage",
-              "digitallab/privacy/ai-data-flow",
-              "digitallab/privacy/sensitive-information",
-              "digitallab/privacy/security-limitations"
-            ]
-          },
-          {
-            "group": "项目",
-            "pages": [
-              "digitallab/project/changelog",
-              "digitallab/project/roadmap",
-              "digitallab/project/license"
+            "tab": "DigitalLab",
+            "groups": [
+              {
+                "group": "はじめに",
+                "pages": [
+                  "ja/digitallab/getting-started/overview",
+                  "ja/digitallab/getting-started/features",
+                  "ja/digitallab/getting-started/system-requirements",
+                  "ja/digitallab/getting-started/installation",
+                  "ja/quickstart"
+                ]
+              },
+              {
+                "group": "ユーザーガイド",
+                "pages": [
+                  "ja/digitallab/user-guide/dashboard",
+                  "ja/digitallab/user-guide/device-center",
+                  "ja/digitallab/user-guide/nas-ssh-terminal",
+                  "ja/digitallab/user-guide/ai-assistant",
+                  "ja/digitallab/user-guide/settings"
+                ]
+              },
+              {
+                "group": "アーキテクチャ",
+                "pages": [
+                  "ja/digitallab/architecture/overview",
+                  "ja/digitallab/architecture/electron-python",
+                  "ja/digitallab/architecture/jsonl-ipc",
+                  "ja/digitallab/architecture/system-state",
+                  "ja/digitallab/architecture/panels",
+                  "ja/digitallab/architecture/configuration-storage"
+                ]
+              },
+              {
+                "group": "開発者ガイド",
+                "pages": [
+                  "ja/digitallab/development/environment",
+                  "ja/digitallab/development/running-locally",
+                  "ja/digitallab/development/repository-structure",
+                  "ja/digitallab/development/build-and-packaging",
+                  "ja/digitallab/development/contributing"
+                ]
+              },
+              {
+                "group": "プライバシーとセキュリティ",
+                "pages": [
+                  "ja/digitallab/privacy/privacy-policy",
+                  "ja/digitallab/privacy/data-storage",
+                  "ja/digitallab/privacy/ai-data-flow",
+                  "ja/digitallab/privacy/sensitive-information",
+                  "ja/digitallab/privacy/security-limitations"
+                ]
+              },
+              {
+                "group": "プロジェクト",
+                "pages": [
+                  "ja/digitallab/project/changelog",
+                  "ja/digitallab/project/roadmap",
+                  "ja/digitallab/project/license"
+                ]
+              }
             ]
           }
         ]
       }
     ]
   },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:support@mintlify.com"
+        "href": "https://apps.microsoft.com/detail/9n0rtlx1bcp5",
+        "label": "Microsoft Store"
       }
     ],
     "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
+      "type": "github",
+      "href": "https://github.com/ZWWF0906/Digital-Lab"
     }
   },
   "contextual": {
@@ -127,9 +264,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/ZWWF0906"
     }
   }
 }

@@ -33,7 +33,7 @@ DigitalLab 采用 Electron + Python 的混合桌面架构，兼顾前端富交�
 - **AI 助手** (`panels/ai-assistant.js`)
 - **设置面板** (`panels/settings.js`)
 
-面板通过 `preload.js` 暴露的 `window.digitalLab` API 与主进程通信，并订阅 `state-update` 事件以刷新界面。
+面板通过 `preload.js` 暴露的 `window.digitalLab` API 与主进程通信，并订阅 `state-update` 事件以刷新界面。仪表盘与终端页面均通过 CSP 将 `connect-src` 设为 `'none'`，禁止渲染进程发起网络连接。
 
 ### IPC 桥接层
 
@@ -54,7 +54,7 @@ README 中定义了以下架构原则：
 - **所有数据进入 `system_state`，所有 UI 只消费 `system_state`**：单一数据源，前端与后端解耦。
 - **本地优先，模块化，可扩展**：核心功能无需网络，面板按需加载。
 - **Electron 核心通信不依赖 HTTP**：采用 JSON Lines IPC 协议，零网络开销；同时提供可选的 Flask Web Dashboard 服务。
-- **Privacy First**：设备数据默认保存在本地，敏感配置存储于用户目录。
+- **Privacy First**：设备数据默认保存在本地；v1.6.0 起 AI/NAS 凭据使用 Windows DPAPI（当前用户范围）加密保存；AI 端点默认要求 HTTPS（回环地址的 HTTP 允许，私有网段或 Tailscale 地址的 HTTP 需用户精确授权 `ip[:port]` 后才允许）；运行时数据统一存放于 `%APPDATA%\DigitalLab\` 与 `%APPDATA%\digital-lab\`。
 
 <Note>
   可选的 Web Dashboard 基于 Flask，在 `config.json` 中配置监听地址与端口（默认 `127.0.0.1:8080`）。README 与 CHANGELOG v1.0.0 均提到该服务为可选，但目前源码中未提供使用说明，实际启用方式需进一步验证。

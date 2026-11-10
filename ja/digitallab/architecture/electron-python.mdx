@@ -1,0 +1,89 @@
+---
+title: "Electron と Python の統合"
+description: "Electron メインプロセスが Python サブプロセスを起動・管理する方法。開発モードとパッケージモード、クラッシュ時の自動再起動、トレイ動作について。"
+sidebarTitle: "Electron と Python"
+---
+
+DigitalLab のデスクトップ機能は、Electron メインプロセスが UI を担当し、Python サブプロセスがシステム監視、ハードウェア検出、NAS SSH、AI 推論を担当する構成になっています。両者は標準入出力の JSON Lines プロトコルを介して通信し、HTTP には依存しません。
+
+## サブプロセスの起動方式
+
+`main.js` 内の `startPython()` は、実行環境に応じて起動パスを選択します。
+
+**パッケージモード** (`app.isPackaged === true`)：
+
+- `resources/backend.exe` を使用します。これは PyInstaller が `backend.spec` に基づいて生成したものです。
+- 起動引数：`["--json-mode"]`。
+- 作業ディレクトリ：`process.resourcesPath`。
+
+**開発モード**：
+
+- システムの `python` を使用して、リポジトリ内の `main.py --json-mode` を固定で実行します。リポジトリ内に存在する可能性のある古い `backend.exe` は起動しません。
+- 作業ディレクトリ：`__dirname`（プロジェクトルートディレクトリ）。
+
+起動時に以下の環境変数が設定されます（今回のサブプロセスにのみ有効）。
+
+- `TEMP` / `TMP`：`%APPDATA%\digital-lab\tmp`（アプリの userData 配下の専用一時ディレクトリ）を指します。PyInstaller の onefile 展開に使用し、ホストマシンの一時ディレクトリには依存しません。
+- `PYTHONUNBUFFERED=1`：stdout のバッファリングを禁止し、JSON Lines フレームを即座に出力させます。
+- `PYTHONIOENCODING=utf-8`：UTF-8 エンコーディングを強制し、日本語のデコードエラーを防ぎます。
+
+```js
+var backendTemp = path.join(app.getPath('userData'), 'tmp');
+var backendEnv = {
+  ...process.env,
+  TEMP: backendTemp,
+  TMP: backendTemp,
+  PYTHONUNBUFFERED: '1',
+  PYTHONIOENCODING: 'utf-8',
+};
+pythonProcess = spawn(pythonPath, args, {
+  cwd: cwd,
+  stdio: ['pipe', 'pipe', 'pipe'],
+  env: backendEnv,
+});
+```
+
+## 孤児プロセスのクリーンアップ
+
+リポジトリの main ブランチのソースコードによれば、`main.py` は `cmd_json_mode()` エントリポイントで、最初に `_kill_orphan_backends()` を呼び出し、前回の異常終了で残存した PyInstaller のバックエンドプロセスをクリーンアップします。これは親プロセスが既に存在しない同名プロセスのみを終了させ、現在のプロセスおよびその祖先チェーンはスキップします。
+
+<Note>
+  上記の孤児クリーンアップの動作は、現在のソースコードのコメントにマークされた後続のクリーンアップ項目に由来します。実装の詳細はバージョン間で調整される可能性があります。
+</Note>
+
+## クラッシュ時の自動再起動
+
+メインプロセスは `pythonRetryCount` カウンターと `MAX_RETRIES = 3` の上限を維持しています。
+
+- Python プロセスが `close` または `error` で終了した場合、メインプロセスはカウンターを増加させます。
+- 上限に達していなければ、2 秒後に `setTimeout(startPython, 2000)` を呼び出して再起動します。
+- 新しいプロセスから最初の有効な状態フレーム（`hardware` フィールドを含む）を受信した時点で、カウンターは 0 にリセットされます。
+- 3 回を超えた場合、メインプロセスは `mainWindow.webContents.send('python-status', { available: false, retriesExhausted: true, ... })` を介してレンダリングプロセスに通知し、UI が障害状態を表示します。
+
+```js
+if (pythonRetryCount > 0 && data.hardware) {
+  pythonRetryCount = 0;
+}
+```
+
+## 単一インスタンスロックとウィンドウ動作
+
+- `app.requestSingleInstanceLock()` は `app.whenReady()` の前に呼び出されます。取得に失敗した場合は即座に `app.quit()` します。
+- 2 番目のインスタンスが起動したとき、`second-instance` イベントを介して既存のウィンドウを復元しフォーカスします。
+- 閉じるボタンではアプリを終了せず、システムトレイに隠します。トレイメニューには **メインウィンドウを表示** / **終了** の 2 項目があります。
+- ウィンドウの既定サイズは 1100 x 750、最小サイズは 900 x 600 です。
+
+## ハードウェアアクセラレーションのスイッチ
+
+既定ではハードウェアアクセラレーションは無効になっており、仮想マシン環境との互換性を確保しています。`main.js` の起動時に、アプリレベルの `config.json` 内の `hardware_acceleration` キーを読み取ります。
+
+- 値が `false` または存在しない場合、`app.disableHardwareAcceleration()` を呼び出し、Chromium の GPU 無効スイッチを追加します。
+- ユーザーは設定パネルでハードウェアアクセラレーションを有効にできます。切り替え後は再起動が必要です。
+
+## ログと例外処理
+
+`main.js` は独立したログサブシステムを備えています（v1.5.0 で再実装）。
+
+- `%APPDATA%\digital-lab\digital-lab.log` に非同期書き込みします。
+- 単一ファイルの上限は 5 MB、ローテーションファイルは 3 つ保持します。50 MB を超えた場合は直接削除します。
+- `uncaughtException` / `unhandledRejection` はログにのみ書き込み、`console.*` は呼び出しません。これにより EPIPE の自己増幅を防ぎます。

@@ -1,0 +1,87 @@
+---
+title: "システムアーキテクチャ"
+description: "DigitalLab のシステムアーキテクチャの概要。レンダリングプロセスから Python バックエンドまでの階層関係と設計原則。"
+sidebarTitle: "アーキテクチャ概要"
+---
+
+DigitalLab は Electron + Python のハイブリッドデスクトップアーキテクチャを採用しており、フロントエンドの豊かなインタラクションとバックエンドのシステムレベルの収集能力の両立を図っています。すべてのデータは `system_state` に統合され、すべての UI は `system_state` のみを消費することで、単一のデータソースを形成します。
+
+## アーキテクチャの階層
+
+```text
+┌──────────────────────────────────────┐
+│  Electron メインプロセス（main.js）       │
+│  ウィンドウ管理 · システムトレイ · IPC 通信 │
+│         │ spawn                        │
+│         ▼                              │
+│  Python サブプロセス（main.py）          │
+│  監視収集 · ハードウェア検出 · NAS SSH · AI │
+│         │                              │
+│  stdin/stdout JSON Lines プロトコル     │
+│  リクエスト-レスポンス：requestId で照合  │
+│  状態更新：ブロードキャストモード          │
+└──────────────────────────────────────┘
+```
+
+### レンダリング層
+
+レンダリング層は `dashboard.html` と 5 つのパネルスクリプトで構成されています。
+
+- **ダッシュボード** (`panels/dashboard.js`)
+- **デバイスセンター** (`panels/device-center.js`)
+- **SSH ターミナル** (`panels/terminal.js`)
+- **AI アシスタント** (`panels/ai-assistant.js`)
+- **設定パネル** (`panels/settings.js`)
+
+各パネルは `preload.js` が公開する `window.digitalLab` API を介してメインプロセスと通信し、`state-update` イベントを購読して画面を更新します。ダッシュボードとターミナルのページはいずれも CSP で `connect-src` を `'none'` に設定しており、レンダリングプロセスからのネットワーク接続を禁止しています。
+
+### IPC ブリッジ層
+
+`preload.js` は `contextBridge.exposeInMainWorld('digitalLab', ...)` を使用して、安全なインターフェースをレンダリングプロセスに注入します。これには状態の購読、コマンドの送信、構成の読み書き、AI のストリーミングイベントなどのチャネルが含まれます。`nodeIntegration` は `false`、`contextIsolation` は `true` に設定されており、レンダリングプロセスが Node.js や Electron の内部 API に直接アクセスすることはできません。
+
+### Electron メインプロセス層
+
+`main.js` はウィンドウのライフサイクル、システムトレイ、単一インスタンスロック、Python サブプロセスの管理、閾値アラート通知、テーマ・言語・ハードウェアアクセラレーションなどのアプリレベルの構成の読み書きを担当します。標準入出力を介して Python サブプロセスと JSON Lines メッセージを交換します。
+
+### Python バックエンド層
+
+`main.py` は `--json-mode` で起動し、`stdin/stdout` を介してメインプロセスと通信します。初期化時にコレクター、NAS 監視、イベントバス、システム状態を構築し、独立したスレッド上で継続的に stdin のコマンドを読み取ります。監視収集はデュアルスレッドモデルで実行され、高速収集と低速なハードウェア更新が分離されています。
+
+## コア設計原則
+
+README において、以下のアーキテクチャ原則が定義されています。
+
+- **すべてのデータは `system_state` に入り、すべての UI は `system_state` のみを消費する**：単一のデータソースにより、フロントエンドとバックエンドを分離します。
+- **ローカル優先、モジュール化、拡張可能**：コア機能はネットワーク不要で、パネルは必要に応じて読み込まれます。
+- **Electron コア通信は HTTP に依存しない**：JSON Lines IPC プロトコルを採用し、ネットワークオーバーヘッドをゼロにします。同時に、オプションとして Flask Web Dashboard サービスを提供します。
+- **Privacy First**：デバイスデータは既定でローカルに保存されます。v1.6.0 以降、AI/NAS の認証情報は Windows DPAPI（現在のユーザー範囲）で暗号化して保存します。AI エンドポイントは既定で HTTPS を要求します（ループバックアドレスの HTTP は許可し、プライベートセグメントや Tailscale アドレスの HTTP は、ユーザーが `ip[:port]` を明示的に承認した後に許可します）。実行時のデータは `%APPDATA%\DigitalLab\` と `%APPDATA%\digital-lab\` に統合して保存されます。
+
+<Note>
+  オプションの Web Dashboard は Flask をベースにしており、`config.json` でリッスンアドレスとポートを構成できます（既定値は `127.0.0.1:8080`）。README および CHANGELOG v1.0.0 では、このサービスがオプションであることが言及されていますが、現時点のソースコードでは使用説明が提供されておらず、実際の有効化方法はさらなる検証が必要です。
+</Note>
+
+## モジュールナビゲーション
+
+次の 5 ページでは、プロセス統合、通信プロトコル、状態管理、パネルの読み込み、構成の保存という 5 つの観点から、アーキテクチャの詳細を深掘りします。
+
+<CardGroup cols={2}>
+  <Card title="Electron と Python の統合" icon="plug" href="/ja/digitallab/architecture/electron-python">
+    サブプロセスの起動方式、クラッシュ時の自動再起動、単一インスタンスロックとトレイ動作
+  </Card>
+
+  <Card title="JSON Lines IPC プロトコル" icon="code" href="/ja/digitallab/architecture/jsonl-ipc">
+    メッセージフレーム形式、コマンド表、エラーレスポンスとストリーミングイベント
+  </Card>
+
+  <Card title="システム状態とイベント管理" icon="database" href="/ja/digitallab/architecture/system-state">
+    `system_state` 単一データソース、`event_bus` と `collector` のデュアルスレッド収集
+  </Card>
+
+  <Card title="モジュール化パネルアーキテクチャ" icon="layout" href="/ja/digitallab/architecture/panels">
+    パネルレジストリ、オンデマンド読み込み、キープアライブとセッション維持メカニズム
+  </Card>
+
+  <Card title="構成とストレージ" icon="folder" href="/ja/digitallab/architecture/configuration-storage">
+    2 層構成ストレージ、UI 設定ファイルと初回実行時の移行
+  </Card>
+</CardGroup>

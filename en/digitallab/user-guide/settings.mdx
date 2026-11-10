@@ -1,0 +1,142 @@
+---
+title: "Settings and preferences"
+description: "Manage NAS devices, AI configuration, monitoring thresholds, theme, language, and splash animation."
+sidebarTitle: "Settings"
+---
+
+The **Settings panel** is DigitalLab's configuration center, divided into five tabs: NAS Devices, AI Config, Collection, Software, and About. You can switch among the tabs on the left.
+
+## NAS Devices
+
+Manage your remote devices in the **NAS Devices** tab:
+
+- **Add Device**: enter name, host address, SSH port, username, and password
+- **Edit Device**: click the **Edit** button on a device card to modify its information. A saved password is shown as "Configured (leave blank to keep)"; it is only submitted when you enter a new value. Click **Clear saved password** to delete it explicitly
+- **Delete Device**: click the **Delete** button to remove the configuration
+- **Test Connection**: verify SSH credentials while editing a device
+- **Save All**: write the device list back to configuration and notify the backend to restart NAS monitoring
+
+### SSH host trust
+
+When connecting to an untrusted host or a host whose fingerprint has changed, the Settings panel displays the host's fingerprint and prompts you to run `ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub` on the NAS console to verify. After confirming a match, click **I verified it; trust this host**. For details, see [NAS and SSH terminal](/en/digitallab/user-guide/nas-ssh-terminal).
+
+### Sample NAS
+
+This switch controls whether sample NAS data is enabled for development and testing scenarios.
+
+## AI Config
+
+Manage the AI Assistant's provider and advanced options in the **AI Config** tab:
+
+### AI Provider
+
+Select the default AI provider: **Ollama Local** or **Cloud API**.
+
+### Ollama Local settings
+
+- **Address**: Ollama server endpoint, such as `http://localhost:11434`
+- **Model**: the model name to use. The placeholder in the input box is `llama3`; the README recommends `qwen2.5:7b-instruct-q4_K_M`
+
+### Cloud API settings
+
+- **API Key**: used to authenticate with the OpenAI-compatible API. A saved key is shown as "Configured (enter a new value to replace)"; plaintext is not echoed. Click **Clear Key** to delete it
+- **Address**: the API base URL. Remote addresses must use `https`; local loopback addresses may use `http`
+- **Model**: the model name to call, such as `gpt-4o` or `deepseek-chat`
+
+### Sensitive change confirmation
+
+When you modify sensitive configuration such as the AI provider, server address, API key, or memory storage directory, the app shows a system native confirmation dialog and only saves after confirmation. Private network HTTP exceptions (`ai.allow_insecure_http`) and custom CA bundle (`ai.ca_bundle`) are configuration file-level options; the Settings panel currently has no entries for them. See [Configuration and storage](/en/digitallab/architecture/configuration-storage).
+
+### AI Memory
+
+- **Enable AI Memory**: when enabled, the AI remembers long-term preferences you confirm
+- **Storage Directory**: read-only input box; use the **Choose Directory** button to open the system native directory picker. Leave empty to use the default directory `%APPDATA%\DigitalLab\memory`. After changing the directory and saving, old memory files are copied to the new directory and old files are kept. If migration fails, the original directory is kept; existing target files are not overwritten. UNC paths, device paths, path traversal, and symlink redirection are rejected
+- **View Memory**: browse saved memory entries
+- **Clear Memory**: delete all memory entries
+- **Clean Duplicates**: merge duplicate memory entries, keeping only the earliest one
+
+### Chat History
+
+- **Save chat history**: enabled by default; controls whether conversations are written to a local file
+- **Maximum records**: records beyond the limit are automatically trimmed from the oldest; default is 200
+- **Clear History**: delete all saved conversation records at once
+
+Click **Save AI Config** to write the configuration back and notify the AI Assistant panel to update its provider.
+
+## Collection
+
+Adjust monitoring parameters in the **Collection** tab:
+
+### Collection parameters
+
+| Setting | Default | Range |
+| --- | --- | --- |
+| Local collection interval | 1 s | 1 to 60 s |
+| NAS collection interval | 15 s | 5 to 300 s |
+
+### Monitoring thresholds
+
+| Setting | Default | Range |
+| --- | --- | --- |
+| CPU alert | 80% | 10% to 100% |
+| Memory alert | 85% | 10% to 100% |
+| Disk alert | 90% | 10% to 100% |
+
+When a metric continuously exceeds its threshold, a desktop notification pops up. No repeat reminders are sent until the value falls back below the threshold.
+
+Click **Save Collection Settings** to apply changes immediately.
+
+<Note>
+  The configuration file contains more advanced options (such as log level, log retention days, and Web Dashboard port). For a full description of configuration keys and the dual-layer configuration storage mechanism, please refer to [Configuration and storage](/en/digitallab/architecture/configuration-storage).
+</Note>
+
+## Software
+
+Adjust interface and system-level options in the **Software** tab:
+
+### Hardware Acceleration
+
+Controls whether Chromium hardware acceleration is enabled, **off by default** to improve compatibility with virtual machines. Turning it on improves graphics rendering performance, but requires restarting the app to take effect.
+
+### Theme
+
+- **Dark (default)**: DigitalLab's default dark theme
+- **Light**: a light theme based on the Emerald design system, with a 300 ms smooth transition
+
+<Note>
+  Regardless of the selected theme, the **terminal panel** always stays in a dark CMD style for visual comfort during long sessions.
+</Note>
+
+### Splash Animation
+
+Controls whether the splash animation plays on startup. When off, the app goes straight to the main window; **takes effect on the next start**.
+
+### Language
+
+Three interface languages are supported:
+
+- 简体中文 (Simplified Chinese)
+- English
+- 日本語 (Japanese)
+
+Changes apply immediately, are saved automatically, and persist after restart.
+
+### First-run onboarding
+
+Click **Run onboarding again** to replay the three-step first-run onboarding: choose language, configure a NAS device, and check the connection.
+
+## About
+
+View the following in the **About** tab:
+
+- Application version number
+- Feature list
+- Author and license information ("DigitalLab is open-source software licensed under ISC")
+- **Feedback** entry: send feedback or report inappropriate content via email or GitHub Issues
+
+## Feedback entry
+
+DigitalLab provides a unified feedback and report entry, supporting the following methods:
+
+- **Email Feedback**: opens the system default mail client with the recipient `ZWWF0906@outlook.com`
+- **GitHub Feedback**: opens the [GitHub Issues](https://github.com/ZWWF0906/Digital-Lab/issues/new) creation page

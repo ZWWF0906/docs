@@ -1,131 +1,250 @@
 ---
-title: "Introduction"
-description: "ZWWF Labs is an independent software and technology studio. Building, exploring, engineering."
+title: "ZWWF Labs"
+sidebarTitle: "首页"
+description: "ZWWF Labs 是一个独立软件与技术工作室。这里是 DigitalLab 文档中心与工作室项目的入口。"
 mode: "custom"
 ---
 
-<div style={{ background: "#070D19", color: "#E2E8F0", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif", minHeight: "100vh" }}>
-  <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "112px 32px 96px" }}>
-    <p style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "13px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#60A5FA", margin: "0 0 28px" }}>
-      Independent Software & Technology Studio
+<div className="w-full">
+  <section className="max-w-5xl mx-auto px-6 sm:px-8 pt-20 sm:pt-28 pb-16 sm:pb-20">
+    <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-6">
+      独立软件与技术工作室
     </p>
 
-    <h1 style={{ fontSize: "clamp(48px, 8vw, 88px)", fontWeight: 700, lineHeight: 1.02, letterSpacing: "-0.035em", color: "#F8FAFC", margin: "0 0 24px" }}>
+    <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-5">
       ZWWF Labs
     </h1>
 
-    <p style={{ fontSize: "clamp(22px, 3vw, 30px)", fontWeight: 400, lineHeight: 1.3, letterSpacing: "-0.01em", color: "#CBD5E1", margin: "0 0 40px" }}>
+    <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-300 mb-8">
       Building, Exploring, Engineering.
     </p>
 
-    <p style={{ maxWidth: "640px", fontSize: "18px", lineHeight: 1.7, color: "#94A3B8", margin: "0 0 48px" }}>
-      A small studio for software engineering, AI, and systems work. Projects here start as practical experiments: tools built to solve real problems, tested on real machines, and written up along the way.
+    <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
+      构建实用的软件，探索工程想法，并把过程记录下来。这里汇集了 ZWWF Labs 的项目与文档，目前以 DigitalLab 的文档中心为主。
     </p>
 
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px" }}>
-      <a href="#projects" style={{ display: "inline-block", padding: "12px 22px", borderRadius: "8px", background: "#2563EB", color: "#F8FAFC", fontSize: "15px", fontWeight: 600, textDecoration: "none", border: "none" }}>
-        View projects
+    <div className="flex flex-wrap items-center gap-3">
+      <a href="/digitallab/getting-started/overview" className="inline-block rounded-lg bg-primary hover:bg-primary-dark px-5 py-3 text-sm sm:text-base font-semibold text-white no-underline">
+        阅读 DigitalLab 文档
       </a>
 
-      <a href="/quickstart" style={{ display: "inline-block", padding: "12px 22px", borderRadius: "8px", background: "transparent", color: "#CBD5E1", fontSize: "15px", fontWeight: 500, textDecoration: "none", border: "1px solid rgba(148, 163, 184, 0.28)" }}>
-        Read the docs
+      <a href="/digitallab/getting-started/installation" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-5 py-3 text-sm sm:text-base font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+        安装 DigitalLab
       </a>
     </div>
 
-    <p style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "13px", letterSpacing: "0.08em", color: "#64748B", margin: "64px 0 0" }}>
+    <p className="font-mono text-xs sm:text-sm tracking-wide text-zinc-500 mt-12">
       Developer · Learner · Builder
     </p>
-  </div>
+  </section>
 
-  <div style={{ borderTop: "1px solid rgba(148, 163, 184, 0.12)" }} />
-
-  <div id="projects" style={{ maxWidth: "1080px", margin: "0 auto", padding: "96px 32px" }}>
-    <p style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "13px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#60A5FA", margin: "0 0 16px" }}>
-      01 / Projects
-    </p>
-
-    <h2 style={{ fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 650, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#F8FAFC", margin: "0 0 16px" }}>
-      Current work
-    </h2>
-
-    <p style={{ maxWidth: "620px", fontSize: "17px", lineHeight: 1.7, color: "#94A3B8", margin: "0 0 48px" }}>
-      Both projects are under active development. Expect rough edges, changing interfaces, and honest notes about what works and what does not yet.
-    </p>
-
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-      <div style={{ background: "#0F172A", border: "1px solid rgba(148, 163, 184, 0.14)", borderRadius: "14px", padding: "36px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", margin: "0 0 28px" }}>
-          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "12px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B" }}>AI · Operations</span>
-          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "11px", letterSpacing: "0.06em", color: "#93C5FD", border: "1px solid rgba(96, 165, 250, 0.35)", borderRadius: "999px", padding: "4px 10px" }}>In development</span>
-        </div>
-
-        <h3 style={{ fontSize: "26px", fontWeight: 650, letterSpacing: "-0.015em", color: "#F8FAFC", margin: "0 0 14px" }}>DigitalLab</h3>
-
-        <p style={{ fontSize: "16px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>
-          AI-assisted system management for local machines. DigitalLab explores how agents can help with automation and day-to-day local operations while keeping the operator informed and in control.
+  <section id="digitallab" className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light">
+          主要项目
         </p>
+
+        <span className="font-mono text-xs rounded-full border border-primary/30 dark:border-primary-light/30 text-primary dark:text-primary-light px-2.5 py-0.5">
+          持续开发中
+        </span>
       </div>
 
-      <div style={{ background: "#0F172A", border: "1px solid rgba(148, 163, 184, 0.14)", borderRadius: "14px", padding: "36px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", margin: "0 0 28px" }}>
-          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "12px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748B" }}>Linux · Desktop</span>
-          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "11px", letterSpacing: "0.06em", color: "#93C5FD", border: "1px solid rgba(96, 165, 250, 0.35)", borderRadius: "999px", padding: "4px 10px" }}>In development</span>
-        </div>
-
-        <h3 style={{ fontSize: "26px", fontWeight: 650, letterSpacing: "-0.015em", color: "#F8FAFC", margin: "0 0 14px" }}>TC-Linux</h3>
-
-        <p style={{ fontSize: "16px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>
-          A lightweight Linux desktop environment and an exercise in modular desktop engineering. TC-Linux treats the desktop as a set of small, replaceable components rather than a single monolith.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div style={{ background: "#0B1220", borderTop: "1px solid rgba(148, 163, 184, 0.12)", borderBottom: "1px solid rgba(148, 163, 184, 0.12)" }}>
-    <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "96px 32px" }}>
-      <p style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "13px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#60A5FA", margin: "0 0 16px" }}>
-        02 / Engineering interests
-      </p>
-
-      <h2 style={{ fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 650, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#F8FAFC", margin: "0 0 56px" }}>
-        Where the attention goes
+      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
+        DigitalLab
       </h2>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "40px 32px" }}>
-        <div style={{ borderTop: "2px solid #3B82F6", paddingTop: "24px" }}>
-          <h3 style={{ fontSize: "19px", fontWeight: 600, color: "#F1F5F9", margin: "0 0 10px" }}>AI Agents & Automation</h3>
-          <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>Agents that do useful, bounded work, and the tooling that keeps them predictable.</p>
+      <p className="max-w-3xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
+        一款本地优先的 Windows 桌面应用，用于个人设备管理、系统监控与 AI 辅助交互。基于 Electron + Python 架构，设备数据默认保存在本地。
+      </p>
+
+      <p className="max-w-3xl text-sm sm:text-base leading-relaxed text-zinc-500 dark:text-zinc-400 mb-10">
+        包含仪表盘与监控、设备中心、NAS 与 SSH 终端、AI 助手和设置五个面板。其中 SSH 终端与 AI 助手目前处于测试阶段：SSH 会话暂不支持自动重连，AI 助手为对话模式，不包含 Agent 工具调用能力。
+      </p>
+
+      <CardGroup cols={3}>
+        <Card title="产品概览" icon="book-open" href="/digitallab/getting-started/overview">
+          DigitalLab 是什么，以及它的设计原则
+        </Card>
+
+        <Card title="安装指南" icon="download" href="/digitallab/getting-started/installation">
+          通过 Microsoft Store 或 v1.6.0 安装包安装
+        </Card>
+
+        <Card title="快速上手" icon="bolt" href="/quickstart">
+          从首次启动到日常使用的引导
+        </Card>
+
+        <Card title="功能特性" icon="list" href="/digitallab/getting-started/features">
+          各面板的功能详情与版本演进
+        </Card>
+
+        <Card title="系统架构" icon="sitemap" href="/digitallab/architecture/overview">
+          Electron 与 Python 的分层与通信方式
+        </Card>
+
+        <Card title="隐私政策" icon="shield-halved" href="/digitallab/privacy/privacy-policy">
+          收集与不收集的信息，以及数据去向
+        </Card>
+      </CardGroup>
+
+      <h3 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-100 mt-12 mb-4">
+        获取与发布渠道
+      </h3>
+
+      <div className="flex flex-wrap gap-3 mb-6">
+        <a href="https://apps.microsoft.com/detail/9n0rtlx1bcp5" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-zinc-900 hover:bg-zinc-700 dark:bg-zinc-100 dark:hover:bg-zinc-300 px-4 py-2.5 text-sm font-semibold text-white dark:text-zinc-900 no-underline">
+          Microsoft Store
+        </a>
+
+        <a href="https://github.com/ZWWF0906/Digital-Lab" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+          GitHub 仓库
+        </a>
+
+        <a href="https://github.com/ZWWF0906/Digital-Lab/releases" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+          GitHub Releases
+        </a>
+      </div>
+
+      <Info>
+        * **v1.6.1 及以后**：正式版本仅通过 Microsoft Store 发布和更新。
+        * **v1.6.0**：最后一个通过 GitHub Releases 提供独立安装包的版本。v1.6.0 及更早的安装包仍可在 GitHub Releases 下载。
+        * **GitHub**：继续作为源码、文档、问题反馈与协作平台。
+
+        发布渠道的调整不代表开发结束，DigitalLab 会继续维护，后续版本通过 Microsoft Store 发布。
+      </Info>
+    </div>
+  </section>
+
+  <section className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+        文档导航
+      </p>
+
+      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-10">
+        从哪里开始
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+        <div className="border-t-2 border-primary pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">新用户</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">安装应用并完成首次设置。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/digitallab/getting-started/installation" className="text-primary dark:text-primary-light hover:underline">安装</a></li>
+            <li><a href="/quickstart" className="text-primary dark:text-primary-light hover:underline">快速上手</a></li>
+            <li><a href="/digitallab/getting-started/system-requirements" className="text-primary dark:text-primary-light hover:underline">系统要求</a></li>
+          </ul>
         </div>
 
-        <div style={{ borderTop: "2px solid rgba(148, 163, 184, 0.35)", paddingTop: "24px" }}>
-          <h3 style={{ fontSize: "19px", fontWeight: 600, color: "#F1F5F9", margin: "0 0 10px" }}>Software Engineering</h3>
-          <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>Clear architecture, readable code, and designs that survive contact with change.</p>
+        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">现有用户</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">查阅各面板的用法与版本变化。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/digitallab/getting-started/features" className="text-primary dark:text-primary-light hover:underline">功能特性</a></li>
+            <li><a href="/digitallab/user-guide/dashboard" className="text-primary dark:text-primary-light hover:underline">用户指南</a></li>
+            <li><a href="/digitallab/project/changelog" className="text-primary dark:text-primary-light hover:underline">更新日志</a></li>
+          </ul>
         </div>
 
-        <div style={{ borderTop: "2px solid rgba(148, 163, 184, 0.35)", paddingTop: "24px" }}>
-          <h3 style={{ fontSize: "19px", fontWeight: 600, color: "#F1F5F9", margin: "0 0 10px" }}>Linux & Systems</h3>
-          <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>Working close to the operating system: desktops, services, and the layers underneath.</p>
+        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">开发者</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">了解架构，从源码运行与参与贡献。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/digitallab/architecture/overview" className="text-primary dark:text-primary-light hover:underline">系统架构</a></li>
+            <li><a href="/digitallab/development/environment" className="text-primary dark:text-primary-light hover:underline">开发者指南</a></li>
+            <li><a href="/digitallab/development/contributing" className="text-primary dark:text-primary-light hover:underline">贡献指南</a></li>
+          </ul>
         </div>
 
-        <div style={{ borderTop: "2px solid rgba(148, 163, 184, 0.35)", paddingTop: "24px" }}>
-          <h3 style={{ fontSize: "19px", fontWeight: 600, color: "#F1F5F9", margin: "0 0 10px" }}>Reliability & Operations</h3>
-          <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>Systems that are observable, recoverable, and calm to run.</p>
+        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">关注隐私与安全</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">数据存储位置、凭据保护与已知限制。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/digitallab/privacy/privacy-policy" className="text-primary dark:text-primary-light hover:underline">隐私政策</a></li>
+            <li><a href="/digitallab/privacy/sensitive-information" className="text-primary dark:text-primary-light hover:underline">敏感信息处理</a></li>
+            <li><a href="/digitallab/privacy/security-limitations" className="text-primary dark:text-primary-light hover:underline">已知安全限制</a></li>
+          </ul>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "120px 32px 128px" }}>
-    <p style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "13px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#60A5FA", margin: "0 0 24px" }}>
-      03 / Approach
-    </p>
+  <section className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+        其他项目
+      </p>
 
-    <p style={{ maxWidth: "820px", fontSize: "clamp(24px, 3.2vw, 34px)", fontWeight: 500, lineHeight: 1.4, letterSpacing: "-0.015em", color: "#E2E8F0", margin: "0 0 32px" }}>
-      Build software that is genuinely useful. Learn by engineering it. Document the journey, including the parts that did not work.
-    </p>
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">TC-Linux</h2>
 
-    <p style={{ maxWidth: "620px", fontSize: "17px", lineHeight: 1.7, color: "#94A3B8", margin: 0 }}>
-      ZWWF Labs is where that process happens in the open: projects, notes, and documentation that grow as the work does.
-    </p>
-  </div>
+          <span className="font-mono text-xs rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 px-2.5 py-0.5">
+            开发中
+          </span>
+        </div>
+
+        <p className="max-w-3xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+          一个正在开发中的轻量级 Linux 桌面环境，侧重模块化的桌面工程。文档与下载将在项目具备条件后提供。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+        关于
+      </p>
+
+      <p className="max-w-3xl text-xl sm:text-2xl font-medium leading-snug text-zinc-800 dark:text-zinc-200 mb-6">
+        做真正有用的软件，在工程实践中学习，并把过程完整记录下来，包括没有成功的部分。
+      </p>
+
+      <p className="max-w-3xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
+        ZWWF Labs 是一个独立软件与技术工作室，关注软件工程、AI 与系统方向。项目从实际问题出发，在真实设备上测试，并随开发进展持续更新文档。
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">AI Agents & Automation</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">边界清晰、可预期的 AI 助手与自动化工具。</p>
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Software Engineering</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">清晰的架构、可读的代码，以及经得起变化的设计。</p>
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Linux & Systems</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">贴近操作系统的工作：桌面环境、服务与底层。</p>
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Reliability & Operations</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">可观测、可恢复、运行平稳的系统。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <p className="text-sm text-zinc-500">
+        ZWWF Labs · Building, Exploring, Engineering.
+      </p>
+
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <a href="https://github.com/ZWWF0906" target="_blank" rel="noopener noreferrer" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">GitHub</a>
+        <a href="https://github.com/ZWWF0906/Digital-Lab/issues" target="_blank" rel="noopener noreferrer" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">问题反馈</a>
+        <a href="https://apps.microsoft.com/detail/9n0rtlx1bcp5" target="_blank" rel="noopener noreferrer" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Microsoft Store</a>
+      </div>
+    </div>
+  </footer>
 </div>

@@ -1,0 +1,133 @@
+---
+title: "Repository structure"
+description: "Directory organization and key files of the DigitalLab source repository."
+sidebarTitle: "Repository structure"
+---
+
+Understanding the repository structure helps locate the frontend panels, Python backend modules, and build configuration quickly.
+
+## Project structure diagram
+
+The directory structure below is based on the README description, supplemented with files that exist in the repository but are not listed in the README diagram.
+
+```text
+DigitalLab/
+├── main.js                 # Electron main process (window, tray, IPC, Python subprocess management)
+├── main.py                 # Python backend entry (command-line parsing, HTTP service and process management)
+├── preload.js              # IPC bridge (exposes window.digitalLab secure API)
+├── renderer.js             # Dashboard renderer shell (panel routing, keep-alive, i18n)
+├── renderer-terminal.js    # Standalone terminal window renderer (xterm integration)
+├── preload-terminal.js     # Terminal window IPC bridge (exposes window.terminalAPI)
+├── dashboard.html          # Main window HTML
+├── terminal.html           # Standalone terminal window HTML (xterm integration)
+├── styles.css              # Global styles (Emerald theme system: dark default / light optional)
+├── onboarding.js           # First-run onboarding (three-step wizard)
+├── splash.js               # Startup splash animation and self-check state drive
+├── theme-init.js           # Theme initialization (applies dark/light before first frame)
+├── lang-init.js            # Language initialization (applies configured language before first frame)
+├── boot-text.js            # Splash overlay static text replacement
+├── package.json            # Node project config and build config
+├── requirements.txt        # Python dependencies
+├── backend.spec            # PyInstaller packaging spec
+├── README.md               # Project description (Simplified Chinese)
+├── README.en-US.md         # Project description (English)
+├── README.ja-JP.md         # Project description (Japanese)
+├── CHANGELOG.md            # Changelog (English)
+├── CHANGELOG.zh-CN.md      # Changelog (Chinese)
+├── CHANGELOG.ja-JP.md      # Changelog (Japanese)
+├── PRIVACY.md              # Privacy policy (multilingual)
+├── LICENSE                 # License (ISC)
+├── config.json             # Public configuration
+├── config.schema.json      # Configuration validation rules
+├── .gitignore              # Git ignore rules
+├── i18n.js                 # Main process i18n utility
+├── locales/                # Shared multilingual dictionary for frontend and main process
+│   ├── index.js            # Language list and default language resolution
+│   ├── zh-CN.js            # Simplified Chinese entries
+│   ├── en-US.js            # English entries
+│   └── ja-JP.js            # Japanese entries
+├── build/                  # Build resources
+│   ├── icons/              # App icons and tray icons (icon.ico, StoreLogo.png, etc.)
+│   └── fonts/              # Font files (Inter, JetBrains Mono, Orbitron)
+├── scripts/                # Build scripts
+│   ├── build-backend.ps1   # PyInstaller backend packaging script (with SHA256 check)
+│   └── build-windows.ps1   # Windows full build script (validates version and resource manifest)
+├── core/                   # Python backend modules
+│   ├── __init__.py         # Package exposed interface
+│   ├── config.py           # Configuration loading and dual-layer storage
+│   ├── config_validator.py # Configuration item validation
+│   ├── collector.py        # Dual-thread system monitor data collection
+│   ├── monitor.py          # Performance monitoring daemon
+│   ├── hardware.py         # Hardware info collection
+│   ├── hardware_classifier.py  # Hardware model classification
+│   ├── ai_client.py        # AI client (Ollama / OpenAI)
+│   ├── ai_memory.py        # AI local memory (JSONL storage)
+│   ├── chat_store.py       # AI chat history storage (JSONL storage)
+│   ├── nas_monitor.py      # NAS remote monitoring (SSH)
+│   ├── agent_tools.py      # Agent read-only tool infrastructure (registration, validation, scheduling)
+│   ├── secret_store.py     # Windows DPAPI credential protection (SSH/AI credential encrypted storage)
+│   ├── net_policy.py       # AI network endpoint security policy (loopback/private/public validation)
+│   ├── path_policy.py      # User-configurable path local security policy (absolute path, anti-traversal)
+│   ├── ssh_trust.py        # SSH host identity trust store (fingerprint validation and trust archive)
+│   ├── logger.py           # Logging system
+│   ├── system_state.py     # Global state management
+│   ├── event_bus.py        # Event bus
+│   ├── memory.py           # Chat memory management
+│   ├── snapshot.py         # Performance snapshot storage
+│   ├── renderer.py         # CLI renderer
+│   ├── reporter.py         # Chart generator
+│   ├── launcher.py         # Quick launcher
+│   ├── daemon.py           # Daemon management
+│   └── test_hook_policy.js # Test hook enablement policy (production safety boundary)
+└── panels/                 # Frontend panels (loaded on demand by renderer)
+    ├── index.js            # Panel registry
+    ├── dashboard.js        # Dashboard
+    ├── device-center.js    # Device Center
+    ├── ai-assistant.js     # AI Assistant
+    ├── terminal.js         # SSH terminal panel (list + open standalone window)
+    ├── safe-dom.js         # Renderer safe output utility (HTML/attribute/URL context escaping)
+    └── settings.js         # Settings panel
+```
+
+## Files in the repository not shown in the README structure diagram
+
+| File / directory | Description |
+| --- | --- |
+| `i18n.js` | Main process `t()` implementation, shares the `locales/` dictionary with the renderer process |
+| `locales/` | Contains `index.js`, `zh-CN.js`, `en-US.js`, `ja-JP.js`, providing trilingual support |
+| `build/fonts/` | Font resources directory included in the installer at build time |
+| `build/icons/` | App icons (`icon.ico`, `icon.png`, `icon_512.png`) and tray icon (`icon_tray.png`) plus Microsoft Store logos of various sizes |
+| `backend.spec` | PyInstaller spec file, defines how to package the Python backend as `backend.exe` |
+| `core/__init__.py` | Python package entry, exposes symbols such as `Config` and `get_config` |
+| `core/chat_store.py` | JSONL storage and loading of AI chat history (enabled by default, keeps 200 entries) |
+| `core/config_validator.py` | Schema-based configuration item validation and default value filling |
+| `core/ai_memory.py` | JSONL storage for AI long-term memory (disabled by default), includes `id`, `tags`, `source` fields |
+| `core/agent_tools.py` | Agent read-only tool infrastructure: registration discovery, JSON Schema parameter validation, execution scheduling, data scope declaration |
+| `core/secret_store.py` | Windows DPAPI credential encryption protection; storage format `dpapi:v1:<base64>`, rejects plaintext fallback |
+| `core/net_policy.py` | AI network endpoint security policy: validates loopback, private subnet, public IP, TLS requirement, pure function with no network requests |
+| `core/path_policy.py` | User-configurable path security policy: rejects UNC, relative paths, dot-segment traversal, resolves symlinks before validation |
+| `core/ssh_trust.py` | SSH host identity trust store: saves server public-key fingerprints, unknown hosts handshake before confirmation, changes are rejected |
+| `core/test_hook_policy.js` | Test hook enablement policy: only allowed in non-packaged environment plus explicit flag, forced off in production builds |
+| `main.py` | Python backend entry: argument parsing, Python version check, Windows console configuration, module imports |
+| `renderer.js` | Dashboard renderer shell: panel routing, keep-alive cache (terminal panel detach/attach), i18n integration |
+| `renderer-terminal.js` | Standalone terminal window renderer: xterm.js integration, size auto-fit, input/output event handling |
+| `preload-terminal.js` | Minimal IPC bridge for terminal window: exposes `terminalAPI` (attach / input / resize / close) |
+| `terminal.html` | Standalone terminal window HTML, includes CSP policy and xterm.css; loads `renderer-terminal.js` |
+| `onboarding.js` | First-run onboarding: language selection, NAS device configuration, connection test (three-step wizard) |
+| `splash.js` | Startup splash animation: real status drive, fixed rhythm illumination, timeout fallback, fade-out completion event |
+| `theme-init.js` | Theme initialization script: reads `config.json` and applies dark/light before first frame, writes back to localStorage |
+| `lang-init.js` | Language initialization script: sets language before first frame following `config.json` → localStorage → system language priority |
+| `boot-text.js` | Splash overlay static text replacement: completed synchronously during parsing, depends on `data-i18n` attributes |
+| `panels/safe-dom.js` | Renderer safe output: distinguishes HTML text, attribute, and URL contexts, rejects dangerous protocols such as `javascript:` |
+| `scripts/build-backend.ps1` | PyInstaller backend packaging: calls `backend.spec`, validates existence and SHA256 of `backend.exe` |
+| `scripts/build-windows.ps1` | Windows full build: validates `package.json` version number and resource manifest, packages backend before building Electron |
+| `LICENSE` | ISC license |
+| `PRIVACY.md` | Privacy policy, containing Simplified Chinese, English, and Japanese versions |
+| `.gitignore` | Git ignore rules |
+
+## Module relationships
+
+- For inter-process communication details between `main.js` and `main.py`, see [Electron and Python integration](/en/digitallab/architecture/electron-python).
+- `preload.js` acts as the IPC bridge, securely exposing backend capabilities to the renderer process.
+- `core/system_state.py` and `core/event_bus.py` are the core of state management; for related content, see [System state and event management](/en/digitallab/architecture/system-state).
+- For frontend panel loading mechanisms, see [Modular panel architecture](/en/digitallab/architecture/panels).

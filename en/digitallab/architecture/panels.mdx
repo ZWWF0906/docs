@@ -1,0 +1,111 @@
+---
+title: "Modular panel architecture"
+description: "Panel registration, on-demand loading, internationalization, and state consumption in DigitalLab."
+sidebarTitle: "Panel architecture"
+---
+
+DigitalLab's frontend consists of five functional panels, uniformly registered in `panels/index.js` and loaded and switched on demand by `dashboard.html` via `renderer.js`. Panels operate under the README "on-demand panel loading" principle: core functions require no network, and panels are initialized only when the user switches to them.
+
+## Panel registry
+
+`panels/index.js` exports the `PANELS` array. Each panel contains:
+
+| Field | Description |
+| --- | --- |
+| `id` | Panel identifier, such as `dashboard`, `terminal`, or `ai` |
+| `nameKey` | i18n key, such as `nav.dashboard` |
+| `icon` | Unicode icon character shown in the sidebar |
+| `init` | Panel initialization function `(container, api) => hooks` |
+
+The current five panels are:
+
+- `dashboard` (Dashboard)
+- `device-center` (Device Center)
+- `terminal` (SSH Terminal)
+- `ai` (AI Assistant)
+- `settings` (Settings)
+
+Related files also include `panels/index.js` (registry) and `panels/safe-dom.js` (safe DOM utilities). `safe-dom.js` provides HTML text/attribute escaping, URL validation, and element-creation helpers for each panel. `dashboard.js`, `device-center.js`, and `ai-assistant.js` all import functions from it.
+
+## Internationalizing panel names
+
+Panel names are not hardcoded; they are dynamically resolved through `i18n.js` and language files under `locales/`:
+
+- `getPanelName(id)` in `panels/index.js` calls `window.DigitalLabI18n.t(p.nameKey)`.
+- After a language switch, `dashboard.html` listens for the `language-changed` event and rebuilds the sidebar, refreshing panel names.
+
+Three interface languages are supported: Simplified Chinese (`zh-CN`), English (`en-US`), and Japanese (`ja-JP`), corresponding to `locales/zh-CN.js`, `locales/en-US.js`, and `locales/ja-JP.js`.
+
+## Loading and lifecycle
+
+`renderer.js` (loaded by `dashboard.html`) handles panel-switching logic:
+
+1. **Initial load**: The `dashboard` panel is active by default.
+2. **Switching panels**:
+   - Update the sidebar highlight.
+   - If the target panel is a keep-alive panel (`KEEP_ALIVE_PANELS = { terminal: true }`) and a cached container already exists, move it from the hidden container back to the main area and call `attach()`, without reinitializing.
+   - For other panels, destroy the old container and call `init()` again when switching.
+3. **Keep-alive mechanism**: Starting in v1.5.0, the `terminal` panel uses keep-alive. When switching away, it calls `detach()` and moves into the `#panel-hold` hidden container.
+
+<Note>
+  Starting with v1.6.0, the `terminal` panel in the main window no longer holds an xterm instance or SSH input capability. It only lists online NAS devices and requests the main process to open an independent Terminal window. The real xterm and input handling are in `terminal.html`, `preload-terminal.js`, and `renderer-terminal.js`. The backend retains a 256 KB output buffer for sessions, which is replayed when the terminal window connects.
+</Note>
+
+## State consumption
+
+All panels subscribe to global state broadcasts via `window.digitalLab.onStateUpdate(callback)`. The state frame received by the callback matches the state-frame structure on /en/digitallab/architecture/jsonl-ipc.
+
+Taking `dashboard.js` as an example:
+
+- After receiving `state-update`, it reads fields such as `state.monitor.cpu` and `state.hardware` to update card values.
+- The process table reads `state.monitor.processes` and renders the first 15.
+- It triggers config reload via `api.reloadConfig()`.
+
+Taking `device-center.js` as an example:
+
+- It aggregates local and NAS device states via `api.onStateUpdate`, rendering online/offline device cards and resource metrics.
+
+Taking `terminal.js` as an example:
+
+- It obtains the list of online NAS devices via `api.onStateUpdate` (excluding Mock devices).
+- It requests the main process to show a native confirmation dialog and open an independent Terminal window via `api.terminalOpen(name, 80, 24)`.
+
+Taking `ai-assistant.js` as an example:
+
+- It receives streaming replies via `api.onAiToken` / `api.onAiDone`.
+- It initiates chat requests via `api.aiChat(chatMessages, provider, lang)`.
+- It reads config via `api.getConfig()` and saves the default model via `api.saveSettings({ ai: { provider } }, [])`.
+- It manages memory and chat history via `api.memoryList()`, `api.historyList()`, and `api.historyAppend()`.
+
+Taking `settings.js` as an example:
+
+- It reads and writes config via `api.getConfig()` / `api.saveSettings(patch, dirty)`.
+- It supports tab switching (NAS / AI / Collection / Software / About) and remembers the current tab after a language switch.
+- It manages devices and credentials via `api.saveDevice()`, `api.deleteDevice()`, `api.testNasConnection()`, `api.sshConfirmTrust()`, and `api.clearCredential()`.
+- It manages AI memory and chat history via `api.memoryClear()`, `api.memoryDedupe()`, `api.historyClear()`, `api.chooseMemoryDir()`, `api.memoryList()`, and `api.memoryDelete()`.
+
+## Mapping panels to user guides
+
+For detailed usage of each panel, see the user guides:
+
+<CardGroup cols={2}>
+  <Card title="Dashboard and monitoring" icon="gauge" href="/en/digitallab/user-guide/dashboard">
+    Real-time CPU, memory, disk, and network monitoring, plus performance history and process lists
+  </Card>
+
+  <Card title="Device Center" icon="desktop" href="/en/digitallab/user-guide/device-center">
+    Local hardware info and multi-device status aggregation
+  </Card>
+
+  <Card title="NAS and SSH terminal" icon="terminal" href="/en/digitallab/user-guide/nas-ssh-terminal">
+    NAS device management and xterm.js-based SSH terminal
+  </Card>
+
+  <Card title="AI Assistant" icon="sparkles" href="/en/digitallab/user-guide/ai-assistant">
+    Streaming chat, model switching, and system context injection
+  </Card>
+
+  <Card title="Settings and preferences" icon="gear" href="/en/digitallab/user-guide/settings">
+    Device management, AI configuration, theme and language switching
+  </Card>
+</CardGroup>

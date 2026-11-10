@@ -1,0 +1,66 @@
+---
+title: "Device Center"
+description: "View hardware information, resource usage, and process lists for the local machine and NAS devices; Docker container monitoring is supported."
+sidebarTitle: "Device Center"
+---
+
+The Device Center is the device status aggregation panel in DigitalLab. It displays hardware information, resource usage, process lists, and Docker container status for the local machine and configured NAS devices.
+
+## Device overview
+
+When you open the **Device Center**, you first see a list of device overview cards:
+
+- **Local Host**: the computer running DigitalLab, always shown
+- **NAS Devices**: each configured, online NAS shows a card
+
+Each card shows the device's CPU, memory, and disk usage. Offline NAS devices appear semi-transparent and cannot be clicked to expand details.
+
+Clicking the **Local Host** card jumps directly to the **Dashboard** panel. Clicking an online NAS card expands that device's detailed view.
+
+## NAS device details
+
+After expanding a NAS device, you will see the following content:
+
+### Resource metric cards
+
+CPU, memory, and disk usage are shown in detail, with status lights and progress bars.
+
+### NAS extra info
+
+Shows device temperature, uptime, and host address.
+
+### Process list
+
+Shows processes on the NAS with high CPU or memory usage, including:
+
+| Column | Description |
+| --- | --- |
+| PID | Process ID |
+| Name | Process name |
+| CPU % | CPU usage percentage |
+| Memory % | Memory usage percentage |
+| Command | Startup command (hover to see the full content) |
+
+### Docker containers
+
+If Docker is running on the NAS, the Device Center lists container names, images, and running status. The bottom of the list shows a summary of running containers and total containers.
+
+## Local hardware information
+
+Hardware data in the Device Center comes from the DigitalLab hardware collection module. To improve startup speed, hardware information is cached to `%APPDATA%\DigitalLab\logs\cache\hardware.json`, so the full set does not have to be re-collected on every startup.
+
+For details about data storage, see [Data processing and storage](/en/digitallab/privacy/data-storage).
+
+## Optional dependencies and hardware precision
+
+DigitalLab's core hardware information collection is based on libraries such as `psutil`, which covers most daily usage. In source development and manual Python backend scenarios, installing the following optional dependencies can provide more precise hardware data:
+
+- `nvidia-ml-py`: more precise NVIDIA GPU temperature and utilization (corresponds to `pynvml`)
+- `py-cpuinfo`: cross-platform precise CPU model identification
+- `pyamdgpuinfo`: AMD GPU information collection
+
+<Note>
+  According to the `backend.spec` in the repository source, the packaging configuration already lists `pynvml` in `hiddenimports`. The optional dependencies above only improve precision in a source development environment; the packaged app does not include additional unlisted dependencies.
+</Note>
+
+If you need to configure these dependencies in your development environment, refer to the [Development environment](/en/digitallab/development/environment) page.

@@ -1,0 +1,170 @@
+---
+title: "Features"
+description: "Detailed features of each DigitalLab panel and version evolution, covering released capabilities from v1.0.0 through v1.6.0 and planned features."
+sidebarTitle: "Features"
+---
+
+DigitalLab consists of five modular panels, each responsible for a different data awareness and interaction role. The sections below list features by panel, marking items in testing, user-visible additions between v1.2.0 and v1.6.0, and planned features.
+
+---
+
+## Dashboard
+
+The [Dashboard and monitoring](/en/digitallab/user-guide/dashboard) panel provides a real-time view of system operational status:
+
+- Real-time monitoring of CPU, memory, disk, and network speed
+- Mini trend lines and health indicator lights at a glance
+- Performance history charts (24-hour average and peak values)
+- Process list display
+- NAS device status cards
+
+---
+
+## Device Center
+
+The [Device Center](/en/digitallab/user-guide/device-center) panel shows a full overview of local hardware information:
+
+- CPU model, core count, thread count, and frequency
+- Memory capacity, type, frequency, and slot information
+- GPU model, video memory, temperature, and utilization
+- Disk model, capacity, health status, and partition information
+- Monitor resolution and refresh rate
+- Network adapter status
+- System information (operating system version and uptime)
+
+---
+
+## SSH terminal
+
+The [NAS and SSH terminal](/en/digitallab/user-guide/nas-ssh-terminal) panel provides remote device management capabilities:
+
+- Terminal based on xterm.js, running in an independent "DigitalLab Terminal" window
+- SSH connection to configured and online NAS devices
+- First connection requires host fingerprint verification and trust; untrusted hosts do not receive authentication credentials
+- A system-native confirmation dialog appears before opening a terminal, showing the device and target address
+- CMD-style dark theme
+
+<Warning>
+  The SSH terminal is currently in testing. A popup notification appears the first time you enter it. SSH sessions do not support automatic reconnection: after closing the terminal window or losing the connection, you must reopen it from the terminal panel.
+</Warning>
+
+---
+
+## AI Assistant
+
+The [AI Assistant](/en/digitallab/user-guide/ai-assistant) panel provides conversational capabilities based on system context:
+
+- Streaming output with token-by-token rendering
+- Support for Ollama local models or OpenAI-compatible APIs (such as DeepSeek)
+- Multi-turn conversations with automatic injection of current system state as conversational context
+- Answers questions about CPU, memory, disk, hardware, and NAS
+- Chinese garbled text issues have been fixed; models with good Chinese capabilities are recommended (such as `qwen2.5:7b-instruct-q4_K_M`)
+- Optional AI long-term memory (disabled by default), independent of local chat history
+- Remote AI endpoints require HTTPS; loopback HTTP for local Ollama is excepted
+
+<Warning>
+  The AI Assistant is currently in testing. A popup notification appears the first time you enter it. It is currently in conversational mode and **does not include Agent tool-calling capabilities**. The "Quick deploy" button at the top of the AI Assistant will be enabled in a future update.
+</Warning>
+
+---
+
+## Settings panel
+
+The [Settings and preferences](/en/digitallab/user-guide/settings) panel centralizes application configuration:
+
+- Log level adjustment
+- Monitoring threshold settings
+- NAS device management and SSH host trust
+- AI provider switching; API Key shows only a "configured" status
+- Hardware acceleration toggle
+- Light / dark theme switching: light theme is based on the Emerald design system; the terminal remains dark under both themes
+- Unified feedback and reporting entry point (email / GitHub Issues)
+
+---
+
+## Window and tray
+
+Application-level window and system tray behavior:
+
+- Window size 1100 x 750, minimum 900 x 600
+- Single-instance lock to prevent multiple instances
+- Close button minimizes to the system tray instead of quitting the app
+- Tray menu provides "Show main window" and "Quit" options
+- Hardware acceleration is disabled by default for compatibility with virtual machine environments; it can be toggled in settings
+- Python crash auto-restart, up to 3 times; the user is notified if the limit is exceeded
+
+---
+
+## Version evolution (user-visible features)
+
+From v1.2.0 onward, the following are the main user-visible additions and improvements:
+
+### v1.6.0 (2026-11-09)
+
+- AI/NAS credentials use Windows user-scope secure storage (DPAPI); existing plaintext credentials are automatically migrated at startup
+- Memory, reports, and snapshots are now stored in the user data directory instead of the installation directory
+- The AI memory directory uses the system-native directory picker
+- AI streaming responses impose limits on single-line length, total size, and thinking channel data
+- Simultaneously opening a terminal creates only one SSH session; if terminal window construction or loading fails, the already-created SSH session is closed
+- CSP in the Dashboard and terminal prevents the renderer process from initiating network connections
+- License identifier on the About page unified to ISC
+- README marks Personal Digital Memory as completed in v1.6.0
+
+For the full list, see [Changelog](/en/digitallab/project/changelog). v1.6.0 is the last version to provide a GitHub standalone installer.
+
+### v1.5.0 (2026-10-09)
+
+- Terminal connection persistence: switching panels no longer reconnects, and hiding the window does not lose the session (from v1.6.0 onward, the terminal runs in an independent window)
+- AI chat history: saved locally, restored after restart, and can be cleared from the Settings panel
+- AI memory structure: entries now include id, tag, and source fields
+- Log storm fix: 5 MB rotation, deletion when exceeding 50 MB
+- Command channel is no longer blocked by network waits (SSH connection establishment and connectivity tests run asynchronously)
+- State broadcast deduplication
+- Mock devices no longer appear in the terminal tab list
+
+### v1.4.0 (2026-09-21)
+
+- UI multilingual support: Simplified Chinese, English, and Japanese, switchable at any time in settings
+- First-run onboarding: three-step initial setup (select UI language, add NAS device, check connection)
+- Threshold alert notifications: system notification bubbles when CPU, memory, or disk persistently exceeds the set threshold; no repeated reminders until the value falls back
+- AI Assistant responds in the selected UI language
+- AI error messages are clearer and follow the UI language
+
+### v1.3.0 (2026-09-18)
+
+- Startup splash animation: hexagon and waveform outlines, logotype fade-in, and check items lighting up one by one
+- Splash animation adapted for dark and light themes
+- Settings panel adds a "splash animation" toggle
+- AI Assistant top bar adds a "quick deploy" placeholder button
+- Font localization (Orbitron, Inter, JetBrains Mono)
+- Application icon redrawn
+
+### v1.2.0 (2026-09-10)
+
+- AI local memory feature
+- CLI command surface streamlined
+
+---
+
+## Released vs planned
+
+| Feature | Status | Description |
+| --- | --- | --- |
+| System real-time monitoring | Released v1.0.0 | CPU, memory, disk, network |
+| Hardware information center | Released v1.0.0 | CPU, GPU, memory, disk, display, network |
+| NAS SSH management | Released v1.0.0 | Linux-based NAS only (SSH commands) |
+| AI Assistant | Released v1.0.0 | Conversational mode, streaming output |
+| Light theme | Released v1.1.0 | Dark remains default; 300 ms smooth transition |
+| Multilingual UI | Released v1.4.0 | Simplified Chinese, English, Japanese |
+| First-run onboarding | Released v1.4.0 | Three-step onboarding |
+| Threshold alert notifications | Released v1.4.0 | System notification bubbles |
+| Terminal connection persistence | Released v1.5.0 | Switching panels/hiding window does not lose session |
+| AI chat history | Released v1.5.0 | Saved locally; restored on restart |
+| DPAPI credential protection | Released v1.6.0 | Plaintext credentials auto-migrate at startup; migration failure does not fall back to plaintext |
+| Personal Digital Memory | Released v1.6.0 | Per README Roadmap; corresponds to local AI long-term memory, disabled by default |
+| Agent automation | Planned | Not yet implemented |
+| Plugin system | Planned | Not yet implemented |
+| More NAS platform support | Planned | Currently limited to Linux-based NAS |
+| Data analytics and timeline system | Planned | Not yet implemented |
+
+For details on planned items, see [Roadmap](/en/digitallab/project/roadmap).

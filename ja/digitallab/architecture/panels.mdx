@@ -1,0 +1,111 @@
+---
+title: "モジュラー化されたパネルアーキテクチャ"
+description: "DigitalLab のパネルの登録、オンデマンド読み込み、国際化、および状態消費の仕組み。"
+sidebarTitle: "パネルアーキテクチャ"
+---
+
+DigitalLab のフロントエンドは 5 つの機能パネルで構成されており、すべて `panels/index.js` に統一登録され、`dashboard.html` 経由で `renderer.js` によってオンデマンドで読み込みと切り替えが行われます。パネルは README の「パネルのオンデマンド読み込み」原則に従って動作します。コア機能はネットワーク不要で、パネルはユーザーが切り替えたときにのみ初期化されます。
+
+## パネルレジストリ
+
+`panels/index.js` は `PANELS` 配列をエクスポートします。各パネルには以下のフィールドがあります。
+
+| フィールド | 説明 |
+| --- | --- |
+| `id` | パネル識別子。例：`dashboard`、`terminal`、`ai` |
+| `nameKey` | i18n キー名。例：`nav.dashboard` |
+| `icon` | サイドバーに表示される Unicode アイコン文字 |
+| `init` | パネル初期化関数 `(container, api) => hooks` |
+
+現在の 5 つのパネルは以下の通りです。
+
+- `dashboard`（ダッシュボード）
+- `device-center`（デバイスセンター）
+- `terminal`（SSH ターミナル）
+- `ai`（AI アシスタント）
+- `settings`（設定パネル）
+
+関連ファイルには `panels/index.js`（レジストリ）、`panels/safe-dom.js`（安全な DOM ユーティリティ）があります。`safe-dom.js` は各パネルに HTML テキストおよび属性のエスケープ、URL の検証、要素作成の補助関数を提供しており、`dashboard.js`、`device-center.js`、`ai-assistant.js` はいずれもそこから関連関数をインポートしています。
+
+## パネル名の国際化
+
+パネル名はハードコードされず、`i18n.js` と `locales/` 以下の言語ファイルを通じて動的に解決されます。
+
+- `panels/index.js` の `getPanelName(id)` は `window.DigitalLabI18n.t(p.nameKey)` を呼び出します。
+- 言語切り替え後、`dashboard.html` は `language-changed` イベントを監視し、サイドバーを再構築することでパネル名を更新します。
+
+サポートされる UI 言語は 3 つです。簡体中文（`zh-CN`）、英語（`en-US`）、日本語（`ja-JP`）。それぞれ `locales/zh-CN.js`、`locales/en-US.js`、`locales/ja-JP.js` に対応します。
+
+## 読み込みとライフサイクル
+
+`renderer.js`（`dashboard.html` によって読み込まれる）は、パネル切り替えのロジックを担当します。
+
+1. **初回読み込み**：デフォルトで `dashboard` パネルをアクティブ化します。
+2. **パネル切り替え**：
+   - サイドバーのハイライトを更新します。
+   - 対象パネルが生存パネル（`KEEP_ALIVE_PANELS = { terminal: true }`）で、すでにキャッシュされたコンテナがあれば、それを非表示コンテナからメイン領域に戻し `attach()` を呼び出します。再初期化は行いません。
+   - その他のパネルは、古いコンテナを破棄して `init()` を再呼び出します。
+3. **生存メカニズム**：v1.5.0 より、`terminal` パネルが生存を有効化しています。切り替え時に `detach()` を呼び出し、`#panel-hold` 非表示コンテナに移動します。
+
+<Note>
+  v1.6.0 より、メインウィンドウの `terminal` パネルは xterm インスタンスや SSH 入力機能を持たず、オンラインの NAS デバイスを一覧表示してメインプロセスに独立した Terminal ウィンドウのオープンを要求するのみです。実際の xterm と入力処理は `terminal.html`、`preload-terminal.js`、`renderer-terminal.js` にあります。バックエンドはセッションに 256 KB の出力バッファを保持し、ターミナルウィンドウ接続時に再生します。
+</Note>
+
+## 状態消費
+
+すべてのパネルは `window.digitalLab.onStateUpdate(callback)` を通じて、グローバルな状態ブロードキャストを購読します。コールバックで受け取る状態フレームの構造は、/ja/digitallab/architecture/jsonl-ipc での状態フレームと一致しています。
+
+`dashboard.js` を例にすると：
+
+- `state-update` を受信した後、`state.monitor.cpu` や `state.hardware` などのフィールドを読み取ってカードの数値を更新します。
+- プロセス表は `state.monitor.processes` を読み取り、先頭 15 件をレンダリングします。
+- `api.reloadConfig()` で設定の再読み込みをトリガーします。
+
+`device-center.js` を例にすると：
+
+- `api.onStateUpdate` を通じて、ローカルマシンと NAS デバイスの状態を集約し、オンラインまたはオフラインのデバイスカードとリソース指標をレンダリングします。
+
+`terminal.js` を例にすると：
+
+- `api.onStateUpdate` を通じて、オンラインの NAS デバイスリストを取得します（Mock デバイスは除く）。
+- `api.terminalOpen(name, 80, 24)` でメインプロセスに対し、ネイティブの確認ダイアログをポップアップ表示して独立した Terminal ウィンドウを開くよう要求します。
+
+`ai-assistant.js` を例にすると：
+
+- `api.onAiToken` / `api.onAiDone` を通じてストリーミング応答を受信します。
+- `api.aiChat(chatMessages, provider, lang)` で対話リクエストを発行します。
+- `api.getConfig()` で設定を読み取り、`api.saveSettings({ ai: { provider } }, [])` でデフォルトモデルを保存します。
+- `api.memoryList()`、`api.historyList()`、`api.historyAppend()` でメモリと会話履歴を管理します。
+
+`settings.js` を例にすると：
+
+- `api.getConfig()` / `api.saveSettings(patch, dirty)` で設定の読み書きを行います。
+- タブ切り替え（NAS / AI / 収集 / ソフトウェア / このアプリについて）をサポートしており、言語切り替え後も現在のタブを記憶します。
+- `api.saveDevice()`、`api.deleteDevice()`、`api.testNasConnection()`、`api.sshConfirmTrust()`、`api.clearCredential()` を呼び出してデバイスと認証情報を管理します。
+- `api.memoryClear()`、`api.memoryDedupe()`、`api.historyClear()`、`api.chooseMemoryDir()`、`api.memoryList()`、`api.memoryDelete()` を呼び出して AI メモリと会話履歴を管理します。
+
+## パネルとユーザーガイドの対応関係
+
+各パネルの詳細な使用方法はユーザーガイドを参照してください。
+
+<CardGroup cols={2}>
+  <Card title="ダッシュボードと監視" icon="gauge" href="/ja/digitallab/user-guide/dashboard">
+    CPU、メモリ、ディスク、ネットワークのリアルタイム監視、およびパフォーマンス履歴とプロセスリスト
+  </Card>
+
+  <Card title="デバイスセンター" icon="desktop" href="/ja/digitallab/user-guide/device-center">
+    ローカルハードウェア情報と複数デバイス状態の集約
+  </Card>
+
+  <Card title="NAS と SSH ターミナル" icon="terminal" href="/ja/digitallab/user-guide/nas-ssh-terminal">
+    NAS デバイス管理と xterm.js ベースの SSH ターミナル
+  </Card>
+
+  <Card title="AI アシスタント" icon="sparkles" href="/ja/digitallab/user-guide/ai-assistant">
+    ストリーミング対話、モデル切り替えとシステムコンテキストの注入
+  </Card>
+
+  <Card title="設定と環境設定" icon="gear" href="/ja/digitallab/user-guide/settings">
+    デバイス管理、AI 設定、テーマと言語切り替え
+  </Card>
+</CardGroup>

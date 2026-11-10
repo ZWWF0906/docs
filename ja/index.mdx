@@ -1,0 +1,250 @@
+---
+title: "ZWWF Labs"
+sidebarTitle: "ホーム"
+description: "ZWWF Labs は独立系ソフトウェア＆テクノロジースタジオです。こちらは DigitalLab のドキュメントセンターおよびスタジオプロジェクトへの入り口です。"
+mode: "custom"
+---
+
+<div className="w-full">
+  <section className="max-w-5xl mx-auto px-6 sm:px-8 pt-20 sm:pt-28 pb-16 sm:pb-20">
+    <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-6">
+      独立系ソフトウェア＆テクノロジースタジオ
+    </p>
+
+    <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-5">
+      ZWWF Labs
+    </h1>
+
+    <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-300 mb-8">
+      Building, Exploring, Engineering.
+    </p>
+
+    <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
+      実用的なソフトウェアを構築し、エンジニアリングの発想を探求して、そのプロセスを記録します。こちらには ZWWF Labs のプロジェクトとドキュメントが集約されており、現在は DigitalLab のドキュメントセンターが中心となっています。
+    </p>
+
+    <div className="flex flex-wrap items-center gap-3">
+      <a href="/ja/digitallab/getting-started/overview" className="inline-block rounded-lg bg-primary hover:bg-primary-dark px-5 py-3 text-sm sm:text-base font-semibold text-white no-underline">
+        DigitalLab ドキュメントを読む
+      </a>
+
+      <a href="/ja/digitallab/getting-started/installation" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-5 py-3 text-sm sm:text-base font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+        DigitalLab をインストール
+      </a>
+    </div>
+
+    <p className="font-mono text-xs sm:text-sm tracking-wide text-zinc-500 mt-12">
+      Developer · Learner · Builder
+    </p>
+  </section>
+
+  <section id="digitallab" className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light">
+          主要プロジェクト
+        </p>
+
+        <span className="font-mono text-xs rounded-full border border-primary/30 dark:border-primary-light/30 text-primary dark:text-primary-light px-2.5 py-0.5">
+          継続開発中
+        </span>
+      </div>
+
+      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
+        DigitalLab
+      </h2>
+
+      <p className="max-w-3xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
+        ローカル優先の Windows デスクトップアプリケーションで、個人のデバイス管理、システムモニタリング、および AI 支援によるインタラクションを実現します。Electron と Python を組み合わせたアーキテクチャを採用しており、デバイスデータはデフォルトでローカルに保存されます。
+      </p>
+
+      <p className="max-w-3xl text-sm sm:text-base leading-relaxed text-zinc-500 dark:text-zinc-400 mb-10">
+        ダッシュボードとモニタリング、デバイスセンター、NAS と SSH ターミナル、AI アシスタント、設定の 5 つのパネルを備えています。うち SSH ターミナルと AI アシスタントは現在テスト段階です。SSH セッションは自動再接続に未対応です。AI アシスタントは会話モードであり、Agent のツール呼び出し機能は含まれません。
+      </p>
+
+      <CardGroup cols={3}>
+        <Card title="製品概要" icon="book-open" href="/ja/digitallab/getting-started/overview">
+          DigitalLab とは何か、およびその設計原則
+        </Card>
+
+        <Card title="インストールガイド" icon="download" href="/ja/digitallab/getting-started/installation">
+          Microsoft Store または v1.6.0 のインストーラーからインストール
+        </Card>
+
+        <Card title="クイックスタート" icon="bolt" href="/ja/quickstart">
+          初回起動から日常利用までのガイド
+        </Card>
+
+        <Card title="機能特性" icon="list" href="/ja/digitallab/getting-started/features">
+          各パネルの機能詳細とバージョンの進化
+        </Card>
+
+        <Card title="システムアーキテクチャ" icon="sitemap" href="/ja/digitallab/architecture/overview">
+          Electron と Python の層構成と通信方式
+        </Card>
+
+        <Card title="プライバシーポリシー" icon="shield-halved" href="/ja/digitallab/privacy/privacy-policy">
+          収集する情報としない情報、およびデータの行き先
+        </Card>
+      </CardGroup>
+
+      <h3 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-100 mt-12 mb-4">
+        入手方法と配布チャンネル
+      </h3>
+
+      <div className="flex flex-wrap gap-3 mb-6">
+        <a href="https://apps.microsoft.com/detail/9n0rtlx1bcp5" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-zinc-900 hover:bg-zinc-700 dark:bg-zinc-100 dark:hover:bg-zinc-300 px-4 py-2.5 text-sm font-semibold text-white dark:text-zinc-900 no-underline">
+          Microsoft Store
+        </a>
+
+        <a href="https://github.com/ZWWF0906/Digital-Lab" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+          GitHub リポジトリ
+        </a>
+
+        <a href="https://github.com/ZWWF0906/Digital-Lab/releases" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+          GitHub Releases
+        </a>
+      </div>
+
+      <Info>
+        * **v1.6.1 以降**: 正式版は Microsoft Store のみで配布されます。
+        * **v1.6.0**: GitHub Releases で単体インストーラーを提供する最後のバージョンです。v1.6.0 およびそれ以前のインストーラーは、引き続き GitHub Releases からダウンロードできます。
+        * **GitHub**: 引き続き、ソースコード、ドキュメント、問題フィードバック、およびコラボレーションの場として運用されます。
+
+        配布チャンネルの変更は、開発の終了を意味するものではありません。DigitalLab は今後もメンテナンスを続け、今後のバージョンは Microsoft Store から配布されます。
+      </Info>
+    </div>
+  </section>
+
+  <section className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+        ドキュメントナビゲーション
+      </p>
+
+      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-10">
+        どこから始めるか
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+        <div className="border-t-2 border-primary pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">新規ユーザー</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">アプリをインストールし、初回設定を完了します。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/ja/digitallab/getting-started/installation" className="text-primary dark:text-primary-light hover:underline">インストール</a></li>
+            <li><a href="/ja/quickstart" className="text-primary dark:text-primary-light hover:underline">クイックスタート</a></li>
+            <li><a href="/ja/digitallab/getting-started/system-requirements" className="text-primary dark:text-primary-light hover:underline">システム要件</a></li>
+          </ul>
+        </div>
+
+        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">既存ユーザー</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">各パネルの使い方とバージョンの変更点を確認します。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/ja/digitallab/getting-started/features" className="text-primary dark:text-primary-light hover:underline">機能特性</a></li>
+            <li><a href="/ja/digitallab/user-guide/dashboard" className="text-primary dark:text-primary-light hover:underline">ユーザーガイド</a></li>
+            <li><a href="/ja/digitallab/project/changelog" className="text-primary dark:text-primary-light hover:underline">変更履歴</a></li>
+          </ul>
+        </div>
+
+        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">開発者</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">アーキテクチャを理解し、ソースから実行して貢献します。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/ja/digitallab/architecture/overview" className="text-primary dark:text-primary-light hover:underline">システムアーキテクチャ</a></li>
+            <li><a href="/ja/digitallab/development/environment" className="text-primary dark:text-primary-light hover:underline">開発者ガイド</a></li>
+            <li><a href="/ja/digitallab/development/contributing" className="text-primary dark:text-primary-light hover:underline">貢献ガイド</a></li>
+          </ul>
+        </div>
+
+        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">プライバシーとセキュリティ</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">データの保存場所、認証情報の保護、既知の制限について。</p>
+
+          <ul className="space-y-2 text-sm">
+            <li><a href="/ja/digitallab/privacy/privacy-policy" className="text-primary dark:text-primary-light hover:underline">プライバシーポリシー</a></li>
+            <li><a href="/ja/digitallab/privacy/sensitive-information" className="text-primary dark:text-primary-light hover:underline">機密情報の処理</a></li>
+            <li><a href="/ja/digitallab/privacy/security-limitations" className="text-primary dark:text-primary-light hover:underline">既知のセキュリティ制限</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+        その他のプロジェクト
+      </p>
+
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">TC-Linux</h2>
+
+          <span className="font-mono text-xs rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 px-2.5 py-0.5">
+            開発中
+          </span>
+        </div>
+
+        <p className="max-w-3xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+          開発中の軽量 Linux デスクトップ環境で、モジュール化されたデスクトップエンジニアリングに重点を置いています。ドキュメントとダウンロードは、プロジェクトの条件が整い次第提供されます。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+        概要
+      </p>
+
+      <p className="max-w-3xl text-xl sm:text-2xl font-medium leading-snug text-zinc-800 dark:text-zinc-200 mb-6">
+        実際に役立つソフトウェアを作り、エンジニアリングの実践で学び、成功しなかった部分も含めてそのプロセスをすべて記録します。
+      </p>
+
+      <p className="max-w-3xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
+        ZWWF Labs は独立系ソフトウェア＆テクノロジースタジオで、ソフトウェアエンジニアリング、AI、およびシステム分野に注力しています。プロジェクトは実際の問題から始まり、実機でテストされ、開発の進捗に応じてドキュメントも継続的に更新されます。
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">AI Agents & Automation</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">境界が明確で予測可能な AI アシスタントと自動化ツール。</p>
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Software Engineering</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">明確なアーキテクチャ、読みやすいコード、変化に耐える設計。</p>
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Linux & Systems</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">オペレーティングシステムに近い領域の取り組み: デスクトップ環境、サービス、および低レイヤー。</p>
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Reliability & Operations</h3>
+          <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">観測可能で復旧可能であり、安定して動作するシステム。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer className="border-t border-zinc-200 dark:border-zinc-800">
+    <div className="max-w-5xl mx-auto px-6 sm:px-8 py-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <p className="text-sm text-zinc-500">
+        ZWWF Labs · Building, Exploring, Engineering.
+      </p>
+
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <a href="https://github.com/ZWWF0906" target="_blank" rel="noopener noreferrer" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">GitHub</a>
+        <a href="https://github.com/ZWWF0906/Digital-Lab/issues" target="_blank" rel="noopener noreferrer" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">問題フィードバック</a>
+        <a href="https://apps.microsoft.com/detail/9n0rtlx1bcp5" target="_blank" rel="noopener noreferrer" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Microsoft Store</a>
+      </div>
+    </div>
+  </footer>
+</div>

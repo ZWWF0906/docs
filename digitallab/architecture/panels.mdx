@@ -4,7 +4,7 @@ description: "DigitalLab 的面板注册、按需加载、国际化与状态消�
 sidebarTitle: "面板架构"
 ---
 
-DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.js` 中，由 `dashboard.html` 按需加载与切换。面板按 README 的"面板按需加载"原则运行：核心功能无需网络，面板仅在用户切换时初始化。
+DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.js` 中，由 `dashboard.html` 通过 `renderer.js` 按需加载与切换。面板按 README 的"面板按需加载"原则运行：核心功能无需网络，面板仅在用户切换时初始化。
 
 ## 面板注册表
 
@@ -24,6 +24,8 @@ DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.
 - `terminal`（SSH 终端）
 - `ai`（AI 助手）
 - `settings`（设置面板）
+
+相关文件还包括 `panels/index.js`（注册表）、`panels/safe-dom.js`（安全 DOM 工具）。`safe-dom.js` 为各面板提供 HTML 文本/属性转义、URL 校验与元素创建辅助函数，`dashboard.js`、`device-center.js`、`ai-assistant.js` 均从中导入相关函数。
 
 ## 国际化面板名
 
@@ -57,25 +59,30 @@ DigitalLab 的前端由五个功能面板组成，统一注册在 `panels/index.
 
 - 收到 `state-update` 后读取 `state.monitor.cpu`、`state.hardware` 等字段更新卡片数值。
 - 进程表读取 `state.monitor.processes` 并渲染前 15 条。
+- 通过 `api.reloadConfig()` 触发配置重载。
 
 以 `device-center.js` 为例：
 
-- 聚合本机与 NAS 设备状态，渲染在线/离线设备卡片与资源指标。
+- 通过 `api.onStateUpdate` 聚合本机与 NAS 设备状态，渲染在线/离线设备卡片与资源指标。
 
 以 `terminal.js` 为例：
 
-- 通过 `onStateUpdate` 获取在线 NAS 设备列表（排除 Mock 设备）。
-- 通过 `terminalOpen()` 请求主进程弹出原生确认框并打开独立 Terminal 窗口。
+- 通过 `api.onStateUpdate` 获取在线 NAS 设备列表（排除 Mock 设备）。
+- 通过 `api.terminalOpen(name, 80, 24)` 请求主进程弹出原生确认框并打开独立 Terminal 窗口。
 
 以 `ai-assistant.js` 为例：
 
-- 通过 `onAiToken` / `onAiDone` 接收流式回复。
-- 通过 `sendCommand({ cmd: 'ai_chat', ... })` 发起对话请求。
+- 通过 `api.onAiToken` / `api.onAiDone` 接收流式回复。
+- 通过 `api.aiChat(chatMessages, provider, lang)` 发起对话请求。
+- 通过 `api.getConfig()` 读取配置，`api.saveSettings({ ai: { provider } }, [])` 保存默认模型。
+- 通过 `api.memoryList()`、`api.historyList()`、`api.historyAppend()` 管理记忆与对话历史。
 
 以 `settings.js` 为例：
 
-- 通过 `getConfig()` / `saveConfig()` 读写配置。
+- 通过 `api.getConfig()` / `api.saveSettings(patch, dirty)` 读写配置。
 - 支持标签页切换（NAS / AI / 采集 / 软件 / 关于），语言切换后记住当前标签页。
+- 调用 `api.saveDevice()`、`api.deleteDevice()`、`api.testNasConnection()`、`api.sshConfirmTrust()`、`api.clearCredential()` 管理设备与凭据。
+- 调用 `api.memoryClear()`、`api.memoryDedupe()`、`api.historyClear()`、`api.chooseMemoryDir()`、`api.memoryList()`、`api.memoryDelete()` 管理 AI 记忆与对话历史。
 
 ## 面板与用户指南的对应关系
 

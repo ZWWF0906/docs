@@ -1,0 +1,188 @@
+---
+title: "JSON Lines IPC プロトコル"
+description: "Electron メインプロセスと Python サブプロセス間の JSON Lines 通信プロトコル。リクエスト-レスポンス、ストリーミングイベントと状態ブロードキャストについて。"
+sidebarTitle: "JSON Lines IPC"
+---
+
+DigitalLab のコア通信は JSON Lines（JSONL）プロトコルを採用しています。各行は完全な JSON オブジェクトであり、UTF-8 エンコーディングで `stdin/stdout` 上を単方向に転送されます。Electron メインプロセスは Python サブプロセスの `stdin` にコマンドを送信し、Python は `stdout` からレスポンス、イベント、状態フレームを返します。
+
+## メッセージフレーム形式
+
+### リクエストフレーム（メインプロセス → Python）
+
+| フィールド | 型 | 説明 |
+| --- | --- | --- |
+| `cmd` | `string` | コマンド名 |
+| `requestId` | `string` | `crypto.randomUUID()` で生成され、レスポンスの照合に使用されます |
+| その他のフィールド | コマンドによる | `hours`、`messages`、`provider`、`session_id` など |
+
+### レスポンスフレーム（Python → メインプロセス）
+
+コマンドの処理が完了すると、Python は 1 行の JSON を出力し、以下を付与します。
+
+- `__cmd_response__: true` マーク
+- `requestId` はリクエストの ID をエコーバックします
+
+エラーが発生した場合、レスポンスには `error` フィールドが含まれます。一般的なシナリオは以下の通りです。
+
+- コマンドがホワイトリストに含まれていない：`error.code = "ipc.err.forbidden"` を返します。
+- パラメータの検証に失敗：`error.code = "ipc.err.invalidParams"` を返します。
+- コマンドハンドラが例外をスロー：`"handler error: ..."` を返します。
+- stdin の行を JSON として解析できない：`"invalid JSON"` を返します。
+
+### タイムアウト
+
+メインプロセスの `sendToPython()` は 10 秒のタイムアウトを設定します。タイムアウト後、`pendingRequests` からそのリクエストを削除し、拒否された Promise を返します。
+
+## Python コマンド表
+
+以下は `main.py` 内の `_handle_command` ホワイトリスト `_RENDERER_COMMANDS` でサポートされるコマンドです。
+
+| コマンド | 説明 |
+| --- | --- |
+| `ping` | ハートビートテスト。`{ pong: true }` を返します |
+| `get_hardware` | 現在のハードウェアスナップショットを取得（`_format_state()` から `hardware` を抽出） |
+| `get_config` | 完全な構成を取得（`user_config.json` からの機密フィールドを含む） |
+| `save_config_patch` | 構成パッチを保存。パラメータは `patch`、`dirty` |
+| `save_device` | NAS デバイス構成を保存。パラメータは `device`、`dirty` |
+| `delete_device` | 指定した NAS デバイスを削除。パラメータは `name` |
+| `clear_credential` | 認証情報をクリア。パラメータは `kind`、`name` |
+| `reload_config` | 構成をリロード。NAS 監視を停止、削除済みデバイスの状態をクリーンアップ、リロード、監視を再起動 |
+| `ai_chat` | ストリーミング AI 対話。パラメータは `messages`、`provider`、`lang` |
+| `get_ai_memory` | AI メモリ設定とエントリ一覧を取得 |
+| `delete_ai_memory` | インデックスで AI メモリを削除。パラメータは `index`、`expected_sha256` |
+| `clear_ai_memory` | すべての AI メモリをクリア |
+| `dedupe_ai_memory` | 重複したメモリを統合 |
+| `chat_history_get` | 会話履歴を取得。パラメータは `limit`、`session_id` |
+| `chat_history_append` | 会話記録を追加。パラメータは `role`、`content`、`session_id` |
+| `chat_history_clear` | 会話履歴をクリア。パラメータは `session_id` |
+| `test_nas_connection` | NAS 接続性をテスト。`async` モードをサポート。パラメータは `device_id` |
+| `ssh_probe` | SSH ホストのプローブとフィンガープリント収集。パラメータは `device_id` |
+| `ssh_confirm_trust` | SSH ホストの信頼を確認。パラメータは `device_id`、`fingerprint`、`replace` |
+| `terminal_input` | 端末セッションに入力を送信。パラメータは `session_id`、`data` |
+| `terminal_resize` | 端末 PTY サイズを変更。パラメータは `session_id`、`cols`、`rows` |
+| `terminal_close` | 端末セッションを閉じる。パラメータは `session_id` |
+| `terminal_attach` | セッションを再アタッチしリングバッファを再生。パラメータは `session_id` |
+| `ssh_terminal_init` | SSH 端末接続を初期化。`async` モードをサポート。パラメータは `device_id`、`cols`、`rows` |
+
+## ストリーミングと非同期イベント
+
+一部の操作は `__cmd_response__` を介して返却せず、独立したイベントフレームとしてプッシュされます。
+
+### AI ストリーミングイベント
+
+- `type: "ai_token"`：文字単位の token。`requestId` と `data.token` を含みます。
+- `type: "ai_done"`：ストリームの終了。完全な `text`、`memory`、`error` と `requestId` を含みます。
+
+### 非同期接続結果（v1.5.0+）
+
+- `type: "terminal_connect_result"`：SSH 接続確立の結果。`ok`、`session_id` または `error` を含みます。
+- `type: "nas_test_result"`：NAS 接続性テストの結果。`ok` とエラー情報を含みます。
+
+### 端末出力
+
+端末セッションの出力フレームは、コマンドレスポンスを介さずに直接プッシュされます。
+
+```json
+{"session_id": "a1b2c3d4", "data": "ls\r\nfile.txt\r\n"}
+```
+
+## 状態ブロードキャスト
+
+Python メインループは毎秒 `_format_state()` を呼び出して状態フレームを構築し、stdout に出力します。現在のフレーム文字列が前回と完全に同じ場合は送信をスキップしますが、少なくとも 5 秒に 1 回はハートビートとして送信します。
+
+```python
+if frame != _last_frame or (now - _last_frame_ts) >= _HEARTBEAT_SECONDS:
+    _safe_print(frame, flush=True)
+    _last_frame = frame
+    _last_frame_ts = now
+```
+
+<Note>
+  上記の状態ブロードキャストの重複排除動作は、`main.py` の 1.5.1 のメインループ実装に由来します。
+</Note>
+
+状態フレームには以下のトップレベルキーが含まれます。
+
+- `monitor`：CPU、メモリ、ディスク、ネットワーク速度、プロセス一覧（最大 15 件）。
+- `hardware`：CPU、GPU、メモリ、ディスク、システム情報の概要。
+- `nas`：各 NAS デバイスのオンライン状態と負荷。
+- `alerts`：直近 5 件のアラート記録（インクリメントする `seq` を含む）。
+
+メインプロセスは状態フレームを受信すると、`mainWindow.webContents.send('state-update', data)` を介してレンダリングプロセスにブロードキャストします。アラート部分は `seq` で重複排除し、未通知の新規アラートのみをポップアップ表示します。
+
+### stdout ロック
+
+Python バックエンドは `_stdout_lock = threading.Lock()` を使用して `_safe_print` を保護し、メインループの状態プッシュとコマンドレスポンスやストリーミングイベントが stdout 上で混在して JSON の解析に失敗するのを防ぎます。
+
+## レンダリングプロセスブリッジ API
+
+`preload.js` が公開する `window.digitalLab` のうち、プロトコルに関連する主要なメソッドは以下の通りです。
+
+| メソッド | IPC チャネル | 説明 |
+| --- | --- | --- |
+| `onStateUpdate(callback)` | `state-update` (listen) | 状態ブロードキャストを購読 |
+| `onAiToken(callback)` | `ai-token` (listen) | AI token ストリームを購読 |
+| `onAiDone(callback)` | `ai-done` (listen) | AI 応答の終了を購読 |
+| `onNasTestResult(callback)` | `nas-test-result` (listen) | NAS 接続性結果を購読 |
+| `onPythonStatus(callback)` | `python-status` (listen) | Python プロセスの可用性状態を購読 |
+| `onWindowShown(callback)` | `window-shown` (listen) | ウィンドウ表示イベント |
+| `getHardware()` | `api:hardware:get` (invoke) | ハードウェアスナップショットを取得 |
+| `getConfig()` | `api:config:get` (invoke) | 完全な構成を取得 |
+| `saveSettings(patch, dirty)` | `api:config:save_settings` (invoke) | 構成パッチを保存 |
+| `saveDevice(device, dirty)` | `api:config:save_device` (invoke) | デバイス構成を保存 |
+| `deleteDevice(name)` | `api:config:delete_device` (invoke) | デバイスを削除 |
+| `clearCredential(kind, name)` | `api:config:clear_credential` (invoke) | 認証情報をクリア |
+| `reloadConfig()` | `api:config:reload` (invoke) | 構成をリロード |
+| `aiChat(messages, provider, lang)` | `api:ai:chat` (invoke) | ストリーミング AI 対話を開始 |
+| `testNasConnection(deviceId)` | `api:nas:test` (invoke) | NAS 接続性をテスト |
+| `sshProbe(deviceId)` | `api:nas:probe` (invoke) | SSH ホストをプローブ |
+| `sshConfirmTrust(challengeId)` | `api:nas:confirm_trust` (invoke) | フィンガープリントの信頼を確認 |
+| `terminalOpen(deviceId, cols, rows)` | `api:terminal:open` (invoke) | 独立した端末ウィンドウを開く |
+| `chooseMemoryDir()` | `api:memory:choose_dir` (invoke) | システムネイティブセレクターで AI メモリディレクトリを選択 |
+| `chooseCaBundle()` | `api:ai:choose_ca_bundle` (invoke) | システムネイティブセレクターでオプションの CA Bundle を選択 |
+| `memoryStatus()` | `api:memory:status` (invoke) | AI メモリ状態を取得 |
+| `memoryList(limit)` | `api:memory:list` (invoke) | AI メモリを一覧表示 |
+| `memoryDelete(index, expectedSha256)` | `api:memory:delete` (invoke) | 指定したメモリを削除 |
+| `memoryClear()` | `api:memory:clear` (invoke) | メモリをクリア |
+| `memoryDedupe()` | `api:memory:dedupe` (invoke) | 重複したメモリを統合 |
+| `historyList(limit)` | `api:history:list` (invoke) | 会話履歴を一覧表示 |
+| `historyAppend(role, content)` | `api:history:append` (invoke) | 会話記録を追加 |
+| `historyClear()` | `api:history:clear` (invoke) | 会話履歴をクリア |
+
+`preload-terminal.js` は `terminal.html` にのみ `window.terminalAPI` を公開し、端末専用のチャネルを提供します。
+
+| メソッド | IPC チャネル | 説明 |
+| --- | --- | --- |
+| `onContext(callback)` | `terminal-context` (listen) | 端末コンテキストを購読 |
+| `onData(callback)` | `terminal-data` (listen) | 端末出力を購読 |
+| `attach(sessionId)` | `api:terminal:attach` (invoke) | セッションを再アタッチ |
+| `input(sessionId, data)` | `api:terminal:input` (invoke) | 端末入力を送信 |
+| `resize(sessionId, cols, rows)` | `api:terminal:resize` (invoke) | 端末サイズを変更 |
+| `close(sessionId)` | `api:terminal:close` (invoke) | 端末セッションを閉じる |
+
+## JSON Lines の例
+
+**リクエスト**：
+
+```json
+{"cmd": "get_hardware", "requestId": "a1b2-c3d4-e5f6-7890"}
+```
+
+**レスポンス**：
+
+```json
+{"hardware": {"cpu": {"model": "Intel Core i7", "cores": 8, "threads": 16}, "gpu": {"name": "RTX 3060", "vram_gb": 12}}, "__cmd_response__": true, "requestId": "a1b2-c3d4-e5f6-7890"}
+```
+
+**AI token ストリーム**：
+
+```json
+{"type": "ai_token", "requestId": "b2c3-d4e5-f6g7-8901", "data": {"token": "こんにちは", "kind": "content"}}
+```
+
+**状態フレーム（抜粋）**：
+
+```json
+{"monitor": {"cpu": 8.2, "memory": 42.1, "disk": 55.3, "network_speed": 12.5, "processes": [...]}, "hardware": {"cpu": {"model": "Intel Core i7", "cores": 8, "threads": 16}, "gpu": {"name": "RTX 3060", "vram_gb": 12}}, "nas": {"NAS-01": {"online": true, "cpu": 15.0, "memory": 32.0, "disk": 40.0}}, "alerts": []}
+```

@@ -1,0 +1,86 @@
+---
+title: "Privacy policy"
+description: "Overview of the DigitalLab privacy policy, including core principles, collected and uncollected information, AI endpoint transport policy, third-party services, and contact information."
+---
+
+<Info>
+  This page is based on DigitalLab v1.6.0 implementation and <a href="https://github.com/ZWWF0906/Digital-Lab/blob/main/PRIVACY.md">PRIVACY.md on GitHub</a> (last updated 2026-11-10). The Simplified Chinese version takes precedence. PRIVACY.md's descriptions of NAS network scope, API Key transmission method, and credential encryption fields deviate from the code in some places; this page defers to the code.
+</Info>
+
+DigitalLab runs primarily on the local machine: hardware and performance data are collected, displayed and saved locally; monitoring data, configuration and AI data are written locally by default.
+
+## Core principles
+
+The application has no telemetry, user behavior tracking or background data upload capabilities.
+
+Three situations in which data leaves the local machine must be distinguished:
+
+1. **Local Ollama model**: the default address is local `http://localhost:11434`, and requests do not leave the local machine. If you change the Ollama address to another host, requests go to that host and the [AI endpoint transport policy](#ai-endpoint-transport-policy) below applies.
+2. **Cloud AI model (OpenAI-compatible API, e.g. DeepSeek)**: only when you use the AI assistant feature, the content of this request is sent to the service endpoint you configured, where it is processed by that provider and subject to its privacy policy.
+3. **NAS device**: only after you configure a NAS, the application connects via SSH to the host address and port you entered, for collecting monitoring data and establishing terminal sessions. The application does not restrict the connection target to the local network; the network path data travels depends on the address you entered and the network environment you are in (e.g. local network, VPN or Tailscale). Collected NAS monitoring data is saved on the local machine.
+
+Outside these situations, the application does not proactively send data to a remote server. In addition:
+
+- **Credentials**: values such as API Keys and NAS passwords are encrypted with Windows DPAPI in the current user scope. See [Sensitive information handling](/en/digitallab/privacy/sensitive-information) for details.
+- **Transport**: remote AI endpoints must use HTTPS with default certificate validation; HTTP is allowed only for loopback addresses, and for private network or Tailscale addresses precisely authorized by IP and port.
+- **Logs**: logs do not contain AI conversation content or request context; the logging system itself does not apply general-purpose field redaction. When an AI request fails, the error summary shown in the UI is redacted to a limited extent (the URL is removed and credential-like key/value pairs are replaced); this is a UI error message treatment, not log redaction, and does not mean the content in logs has been redacted. See [Data processing and storage](/en/digitallab/privacy/data-storage#logs) for details.
+
+## Information collected
+
+DigitalLab collects the following information on the local machine, used for dashboard display, local analysis and providing context to the AI assistant:
+
+1. **Local hardware information**: CPU model and frequency, memory capacity and type, GPU model and VRAM, disk model and capacity, monitor specifications, network adapter information, system model and manufacturer. See [Data processing and storage](/en/digitallab/privacy/data-storage) for details.
+2. **System performance data**: CPU usage, memory usage, disk usage, network speed, process list (PID, name, CPU and memory usage). See [Data processing and storage](/en/digitallab/privacy/data-storage) for details.
+3. **NAS device data**: CPU, memory, disk and Docker container status of NAS devices you configured (collected via SSH connection; data stored locally). See [Data processing and storage](/en/digitallab/privacy/data-storage) for details.
+4. **AI conversation history**: conversation content between you and the AI assistant (generated only when you actively use the AI feature), saved locally by default. See [AI data flow](/en/digitallab/privacy/ai-data-flow) for details.
+5. **AI memory (optional, off by default)**: only after you enable memory in Settings, preferences you explicitly expressed and that are worth remembering long-term are persisted locally. See [AI data flow](/en/digitallab/privacy/ai-data-flow) for details.
+6. **AI request context (created only when the AI feature is used)**: the request sent to the selected AI provider contains the static prompt, memory content (if enabled), a real-time system status summary and the most recent conversation content. The API Key is placed only in the HTTP request header for authentication and is not part of the model-visible request content. See [AI data flow](/en/digitallab/privacy/ai-data-flow) for details.
+
+## Information not collected
+
+DigitalLab does not actively collect the following information:
+
+- Personal identity information (name, email, phone number)
+- Browser history, cookies or passwords
+- File contents (only disk usage is counted; file contents are not scanned)
+- Screenshots or keystroke logs
+- Location information
+- Contacts or address books
+
+However, information you enter proactively is not subject to this restriction: personal information you mention in conversation, names and device names you enter in Settings are saved locally as described under "Information collected" and [Data storage locations](/en/digitallab/privacy/data-storage#data-storage-locations); when using a cloud model, conversation content and AI request context are sent to the provider you choose. Do not enter sensitive information in conversation or configuration that you do not want to send to a cloud provider.
+
+## AI endpoint transport policy
+
+Before an AI request (Ollama or OpenAI-compatible API) is sent, the application checks the service address you configured:
+
+| Target address | Allowed? | Notes |
+| --- | --- | --- |
+| Remote HTTPS | Yes | Uses default TLS certificate validation; the application does not provide a switch to disable it |
+| Loopback HTTP (`127.0.0.0/8`, `::1`, `localhost`) | Yes | `localhost` must fully resolve to a loopback address and bypass the system proxy |
+| Private network or Tailscale HTTP | Allowed only after precise authorization | Must be registered in the `ai.allow_insecure_http` configuration item as an IP literal `ip[:port]` |
+| Domain name HTTP | Denied | No authorization exception |
+| Public IP HTTP | Denied | No authorization exception |
+| Link-local or cloud metadata HTTP | Denied | No authorization exception |
+
+Requests do not follow HTTP redirects. For network ranges, `ai.ca_bundle` and authorization methods, see [Sensitive information handling](/en/digitallab/privacy/sensitive-information#ai-endpoint-transport-policy).
+
+## Third-party services
+
+After you configure them, DigitalLab may connect to the following third-party services:
+
+1. **Ollama (local model)**: AI assistant feature. By default connects to local `localhost:11434`; data does not leave the local machine. If you change the address to another host, requests go to that host and the transport policy above applies.
+2. **Cloud model (OpenAI-compatible API, e.g. DeepSeek)**: AI assistant feature. Content sent includes: conversation content, prompt template, real-time system status summary (CPU/memory/disk usage, hardware model and capacity, NAS name and load), long-term memory content (when AI memory is enabled); API Key is used only as an `Authorization: Bearer` request header for authentication. This data is processed by the provider you choose and is subject to its privacy policy.
+3. **NAS device**: connects via SSH to the host address and port you entered. The network path depends on that address and your network environment (local network, VPN, Tailscale, etc.). The application does not restrict connections to local network devices only.
+
+The above connections are triggered only after you configure them or use the associated feature; no remote service is connected by default.
+
+## Policy changes
+
+If this privacy policy is updated, the "Last updated" date at the top of PRIVACY.md will be revised and the update will be released with an application version. Significant changes to data processing methods will be noted in the application or in the release notes of the project repository. Continuing to use an updated version means accepting the revised policy.
+
+## Contact
+
+For privacy-related questions, please contact:
+
+- GitHub Issues: <a href="https://github.com/ZWWF0906/Digital-Lab/issues">[https://github.com/ZWWF0906/Digital-Lab/issues](https://github.com/ZWWF0906/Digital-Lab/issues)</a>
+- Email: <a href="mailto:ZWWF0906@outlook.com">[ZWWF0906@outlook.com](mailto:ZWWF0906@outlook.com)</a>

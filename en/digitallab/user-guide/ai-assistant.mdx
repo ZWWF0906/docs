@@ -1,0 +1,106 @@
+---
+title: "AI Assistant"
+description: "Chat with local Ollama models or remote API endpoints, with automatic system status context injection, multi-turn conversations, and chat history."
+sidebarTitle: "AI Assistant"
+---
+
+The AI Assistant is DigitalLab's intelligent chat panel. It supports local Ollama models and remote OpenAI-compatible APIs, and can answer hardware, performance, and NAS questions based on real-time system status.
+
+<Warning>
+  The **AI Assistant** is currently **in testing**. A notice pops up the first time you open the panel. Only chat mode is supported; Agent tool calling is not available.
+</Warning>
+
+## Model provider switch
+
+The AI Assistant supports two providers, which you can switch between at the top of the panel:
+
+- **Ollama Local**: connects to `localhost:11434` on this machine; data never leaves the device
+- **Cloud API**: connects to the OpenAI-compatible server endpoint you have configured, such as DeepSeek
+
+The selected provider is automatically saved to configuration and persists across restarts. When you change the provider, server address, or API key, the app shows a system native confirmation dialog.
+
+### Server endpoint requirements
+
+- **Remote endpoints must use HTTPS**, and are verified with the system's default TLS certificate chain. The app does not provide a way to disable this verification.
+- **Local loopback addresses** (such as `http://localhost:11434`) may use HTTP.
+- **Private network or Tailscale addresses over HTTP**: allowed only after you explicitly register the exact `ip[:port]` literal in the configuration key `ai.allow_insecure_http`. Domain-based HTTP addresses and public IP HTTP addresses are rejected. The Settings panel currently has no entry for this field.
+- **Custom CA**: you can specify a CA bundle file via the configuration key `ai.ca_bundle`. If the explicitly configured file is missing or unreadable, the request fails directly without falling back to system trust.
+- Requests do not follow redirects.
+
+For details, see [Sensitive information handling](/en/digitallab/privacy/sensitive-information).
+
+## Streaming chat
+
+The AI Assistant uses **streaming output**: model-generated content appears token-by-token in the chat window, so you do not have to wait for the full reply. Starting with v1.6.0, streaming responses have safety limits for single-line length, total size, and the reasoning channel.
+
+After you send a message, the AI reply is automatically injected with the current system status as context, including:
+
+- Real-time CPU, memory, and disk usage
+- Local hardware model and capacity
+- Online status and load metrics of configured NAS devices
+
+You can ask questions such as "What is my CPU usage?" or "Is my NAS memory still enough?" and the AI will answer based on real-time data.
+
+## Recommended models
+
+If you use local Ollama, a model with good Chinese capability is recommended:
+
+- `qwen2.5:7b-instruct-q4_K_M`
+
+## Interface language
+
+Starting with v1.4.0, the AI Assistant replies in your selected interface language. After switching among Simplified Chinese, English, or Japanese in the **Settings panel**, the AI's replies follow that language.
+
+## Chat history
+
+Starting with v1.5.0, chat history saving is enabled by default and stored in `%APPDATA%\DigitalLab\memory\chat_history.jsonl`:
+
+- The previous conversation is automatically restored after restarting the app
+- You can turn off saving, adjust the maximum number of retained records, or clear all history at once in the **Settings panel**
+
+<Note>
+  Turning off "Save chat history" only stops writing new records; it does not delete the existing file. The current message will still be sent to the AI provider.
+</Note>
+
+## AI memory
+
+AI memory is long-term memory saved on this machine, **disabled by default**. When enabled, the AI remembers long-term preferences you explicitly express in chat (such as how to address you, device names, and usage habits) and references them in later conversations.
+
+- **Storage location**: default `%APPDATA%\DigitalLab\memory\ai_memory.jsonl`; you can change the directory using the system native directory picker in Settings
+- **Entry structure**: each memory contains content, timestamp, category, tags, and source fields. Only the memory content itself is sent to the model; identifier, category, tags, and source fields are not sent with the request
+- **Injection**: when enabled, the most recent memories are injected with each request. When using a cloud model, these memory contents are sent to that provider
+- **After turning off**: no new memories are written, and no memories are read or injected, but existing files remain on the machine
+
+In the **Settings panel**, you can view memory entries, delete individual entries, clear all entries, or clean duplicates (keeping only the earliest entry for identical content).
+
+<Note>
+  **Version history**: local memory was introduced in v1.2.0. v1.5.0 added id, tags, and source fields to entries. The Roadmap in the README marks Personal Digital Memory as completed in v1.6.0. The current implementation uses local JSONL storage and keyword search, not a vector database.
+</Note>
+
+<Info>
+  AI memory and chat history are two independent features: turning one off does not turn off the other, and does not stop AI requests.
+</Info>
+
+## Quick deploy button
+
+A **Quick Deploy** button at the top of the AI Assistant panel is a placeholder added in v1.3.0. Clicking it only shows the message "This feature is under development. Stay tuned." It has not yet been implemented.
+
+## Agent automation capabilities
+
+<Warning>
+  **Agent automation capabilities** are a planned item on the roadmap and are **not yet implemented** in the current version. The AI Assistant only supports chat Q&A and does not have tool calling, automatic command execution, or automatic deployment capabilities.
+</Warning>
+
+`core/agent_tools.py` in the repository is read-only infrastructure for Agent tools. It is not currently exposed to the model (`MODEL_EXPOSURE_ENABLED = False`), so the AI Assistant does not have tool calling capabilities.
+
+## Privacy notes
+
+When using a cloud model, the following data is sent to the API endpoint you configured:
+
+- Chat content (most recent 16 messages)
+- Static prompt and real-time system status summary
+- Enabled AI memory contents
+
+The API key is only sent as the `Authorization` request header; it is not written into prompts or chat content. NAS host addresses and credentials, the full process list, and log contents are not sent with the request. When using local Ollama, the above data is processed only on this machine.
+
+For a detailed explanation of the AI data flow, please refer to [AI data flow](/en/digitallab/privacy/ai-data-flow).

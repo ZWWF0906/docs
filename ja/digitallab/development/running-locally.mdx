@@ -1,0 +1,87 @@
+---
+title: "ローカル実行"
+description: "ソースコードのクローンから開発モードの起動まで、およびよくある問題のトラブルシューティング。"
+sidebarTitle: "ローカル実行"
+---
+
+ローカル実行では、Electron メインプロセスと Python バックエンドを同時に起動する必要があります。開発モードでは、`npm start` が自動的に Python サブプロセスを起動します。
+
+## ソースコードの取得
+
+```bash
+git clone https://github.com/ZWWF0906/Digital-Lab.git
+cd Digital-Lab
+```
+
+## 依存関係のインストール
+
+```bash
+# フロントエンドと Electron の依存関係
+npm install
+
+# Python の依存関係
+pip install -r requirements.txt
+```
+
+## 開発モードの起動
+
+```bash
+npm start
+```
+
+このコマンドは `package.json` の `electron .` に対応します。起動後、Electron メインプロセスはパッケージングモードと開発モードの2種類で Python バックエンドを探します：
+
+1. **パッケージングモード**：内蔵の `backend.exe --json-mode` を使用します。
+2. **開発モード**（`npm start`）：システムの `python` コマンドで `python main.py --json-mode` を固定して使用し、カレントディレクトリに `backend.exe` が存在するかどうかには依存しません。
+
+したがって、開発モードではシステムの `python` が `PATH` に追加されており、Python 3.10+ のバージョン要件を満たしていることを確認してください。
+
+## Python バックエンド CLI モード
+
+`main.py` には開発初期（legacy-0.0.1）の残存ソースコードがあり、`main.py` はコマンドラインのサブコマンドもサポートしています。以下に、検証済みのサブコマンド名と用途を列挙します（`dlab` はエントリープログラム名です）：
+
+| サブコマンド | 用途 |
+| --- | --- |
+| `dlab init` | ディレクトリ構造の初期化 |
+| `dlab status` | システム状態の表示 |
+| `dlab config` | デフォルト設定ファイルの生成 |
+| `dlab state` | `system_state`（グローバル状態センター）の表示 |
+| `dlab state monitor` | monitor 名前空間の表示 |
+| `dlab state hardware` | hardware 名前空間の表示 |
+| `dlab state snapshot` | snapshot 名前空間の表示 |
+| `dlab state logs` | logs 名前空間の表示 |
+| `dlab hardware info` | キャッシュ済みハードウェア情報の表示 |
+| `dlab hardware refresh` | ハードウェア情報の強制更新 |
+| `dlab monitor` | システム監視の表示（`--live`、`--daemon` などのオプション対応） |
+| `dlab launcher` | クイックパネルの起動 |
+| `dlab report` | 分析レポートの生成 |
+| `dlab snapshot` | システムスナップショットの管理（`list`、`create`、`delete`、`compare`、`report`） |
+
+<Note>
+  上記のコマンド一覧にあるコマンドは開発計画に含まれておりません。クライアントのパフォーマンスとユーザー体験を確保するため、これらのコマンドは将来のバージョンで削除される予定です。
+</Note>
+
+## トラブルシューティング
+
+以下は、ソースコードで検証可能なよくある状況です：
+
+**Python サブプロセスの繰り返しクラッシュ**
+
+`main.js` には自動リトライの仕組みがあります：Python プロセスが異常終了すると、メインプロセスは 2 秒後に再試行し、最大 3 回までリトライします。バックエンドが初回にハードウェア情報を含む有効な状態を返すと、リトライ回数はリセットされます。上限を超えると、メインプロセスはレンダラープロセスに `python-status` イベントを送信し、ユーザーにバックエンドが利用できなくなったことを通知します。メインプロセスのログには、Python プロセスの終了コード、および各 stderr 抽出タグと長さカウント（`text.length`）のみを記録し、stderr の原文や末尾の内容は書き込みません。
+
+**メインプロセスログの確認**
+
+Electron メインプロセスのログは、`%APPDATA%\digital-lab\digital-lab.log` に書き込まれます（`main.js` の `writeLog` で実装）。このファイルにはウィンドウのライフサイクル、例外の要約、I/O エラーの要約などが記録され、単一ファイルの上限は 5 MB で自動的にローテーションされます。
+
+**開発モードで Python が見つからない**
+
+`npm start` を実行した際に Python サブプロセスを起動できない旨のエラーが表示される場合は、以下を確認してください：
+
+- `python` コマンドがシステムの `PATH` に含まれているか。
+- Python のバージョンが README で要求される 3.10+ を満たしているか。
+- プロジェクトのルートディレクトリでコマンドを実行しているか（開発モードでは `main.py` の位置を `__dirname` で特定するため）。
+
+**既知の制限**
+
+- SSH ターミナルと AI アシスタントは現在テスト段階であり、対応するパネルに初めて入るとテスト段階の通知が表示されます。
+- SSH セッションは自動再接続にまだ対応していません。

@@ -1,0 +1,173 @@
+---
+title: "設定とストレージ"
+description: "DigitalLab の二層設定ストレージ、DPAPI による認証情報保護と移行、config.json キー表、ai.* 設定キー、実行時データの位置、および UI 設定ファイル。"
+sidebarTitle: "設定とストレージ"
+---
+
+DigitalLab は二層の設定ストレージにより、公開設定と機密データを分離するとともに、独立した UI 設定ファイルを管理しています。このページの内容は v1.6.0 のコードに基づいて整理されています。データとログの完全なファイル一覧は、[データ処理とストレージ](/ja/digitallab/privacy/data-storage) を参照してください。
+
+## 設定ファイルの位置
+
+| 設定ファイル | 位置 | 内容 |
+| --- | --- | --- |
+| `config.json`（実行時） | `%APPDATA%\DigitalLab\config.json` | 公開設定：ポート、しきい値、ログレベル、スイッチなど。ファイルが存在しない場合は、以下のいずれかの操作によって作成され、以降の実行のたびに全体を上書きして書き込まれます。GUI 設定の保存（バックエンドは `_atomic_write_json` で書き込み、`main.py` の 1638 行目）、CLI の `init` または `config` コマンド（`Config.save()` を呼び出し、`main.py` の 127 行目、196 行目） |
+| `config.json`（テンプレート） | プログラムディレクトリ（インストール後はインストールディレクトリ、開発モードではリポジトリルートディレクトリ） | リポジトリルートにあるデフォルト値テンプレート。APPDATA に実行時設定がない場合のフォールバック読み込み元です。`package.json` のパッケージ化設定（`build.files`、`extraResources`）に基づき、このファイルはインストールパッケージに含まれていないため、パッケージ化後のフォールバックではファイルが存在せず、コード内のデフォルト値が直接使用されます。 |
+| `user_config.json` | `%APPDATA%\DigitalLab\user_config.json` | `ai`、`nas_devices`、`auth_token` の 3 つのフィールドグループ。うち認証情報の値は DPAPI 暗号文です。 |
+| UI 設定 `config.json` | `%APPDATA%\digital-lab\config.json` | テーマ、言語、スプラッシュアニメーション、ガイド状態、ハードウェアアクセラレーション |
+| `launchers.json` | プログラムディレクトリ | クイック起動設定。アプリケーション実行時に書き込まれます。プログラムディレクトリがマシンごとのインストールまたは Store インストール下で書き込み可能であるか、およびアンインストール時にクリーンアップされるかは、いずれも未検証です。 |
+| `ssh_trust.json` | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` | SSH ホスト信頼庫（ホスト公開鍵、アルゴリズム、フィンガープリント、信頼時刻）。認証情報は含みません。 |
+
+`Config.load()` は `%APPDATA%\DigitalLab\config.json` を優先して読み取り、存在しない場合はプログラムディレクトリ下の `config.json` にフォールバックし、`user_config.json` の内容で上書きします。どこから読み込んだ場合でも、保存時は必ず `%APPDATA%\DigitalLab\config.json` に書き込まれ、プログラムディレクトリのテンプレートには書き戻されません。
+
+## 実行時データの位置
+
+設定ファイル以外にも、アプリケーションは実行時に以下のデータを書き込みます。すべてユーザーディレクトリ内にあります。
+
+| データ | 位置 |
+| --- | --- |
+| 日次パフォーマンス集計 | `%APPDATA%\DigitalLab\memory\daily.jsonl` |
+| AI 会話履歴 | デフォルト `%APPDATA%\DigitalLab\memory\chat_history.jsonl` |
+| AI 長期記憶 | デフォルト `%APPDATA%\DigitalLab\memory\ai_memory.jsonl` |
+| パフォーマンススナップショット | `%APPDATA%\DigitalLab\snapshots\` |
+| レポート | `%APPDATA%\DigitalLab\reports\` |
+| スナップショットデータベース、監視ログ、デーモン PID | `%APPDATA%\DigitalLab\logs\monitor\` 以下の `monitor.db`、`daemon.log`、`daemon.pid` |
+| ハードウェア情報キャッシュ | `%APPDATA%\DigitalLab\logs\cache\hardware.json` |
+| SSH ホスト信頼庫 | `%APPDATA%\DigitalLab\ssh\ssh_trust.json` |
+| Electron インターフェースログ | `%APPDATA%\digital-lab\digital-lab.log`（ローテーションで `.1` から `.3` を保持） |
+| バックエンド一時ディレクトリ | `%APPDATA%\digital-lab\tmp\` |
+
+`main.js` は Python バックエンド起動時に、子プロセスの `TEMP` / `TMP` を `%APPDATA%\digital-lab\tmp` に向け、システムの一時ディレクトリには依存しません。
+
+会話履歴と AI 記憶のディレクトリは変更できます。有効順序は、環境変数、設定項目、デフォルトディレクトリです。
+
+| 機能 | 環境変数 | 設定項目 | デフォルト |
+| --- | --- | --- | --- |
+| 会話履歴スイッチ | `DIGITAL_LAB_CHAT_HISTORY_ENABLED` | `ai.history.enabled` | 有効 |
+| 会話履歴上限 | `DIGITAL_LAB_CHAT_HISTORY_LIMIT` | `ai.history.limit` | 200（20 から 5000 の範囲に制限） |
+| 会話履歴ディレクトリ | `DIGITAL_LAB_CHAT_HISTORY_DIR` | `ai.history.dir` | `%APPDATA%\DigitalLab\memory` |
+| AI 記憶スイッチ | `DIGITAL_LAB_AI_MEMORY_ENABLED` | `ai.memory.enabled` | 無効 |
+| AI 記憶ディレクトリ | `DIGITAL_LAB_AI_MEMORY_DIR` | `ai.memory.dir` | `%APPDATA%\DigitalLab\memory` |
+
+ディレクトリ値は、ローカルパス戦略の検証（UNC パス、デバイス名前空間、パストラバーサル、シンボリックリンクなどを拒否）を通過する必要があり、通過しない場合はデフォルトディレクトリにフォールバックします。`daily.jsonl` の位置は固定であり、これらの設定の影響を受けません。
+
+## 機微フィールドの分離
+
+`core/config.py` は機微フィールドの集合 `_SENSITIVE_KEYS = {"auth_token", "ai", "nas_devices"}` を定義しています。`Config.save()` は書き込み時にこの 3 つのフィールドグループを `config.json` からフィルタリングして、個別に `user_config.json` に保存します。
+
+## DPAPI 認証情報保護と移行
+
+v1.6.0 より、認証情報の値は Windows DPAPI の現在のユーザー範囲で暗号化され、`dpapi:v1:` のプレフィックスで保存されます。`core/secret_store.py` の暗号化対象フィールドは以下の通りです。
+
+| フィールド | 説明 |
+| --- | --- |
+| `ai.openai.api_key` | クラウド API Key |
+| `nas_devices[].password` | NAS SSH パスワード |
+| `auth_token` | 旧版フィールド。現在は未使用とみられる |
+
+`ai` 以下のその他のフィールド（プロバイダー、アドレス、モデル、記憶と履歴設定など）および NAS の名前、ホスト、ポート、ユーザー名は、読み取り可能な JSON のままです。
+
+移行は `secret_store.ensure_credentials_ready()` によって、実行時に認証情報を読み取る前に統一的に実行されます。`Config.load()` は機微フィールドの移行を処理しなくなりました。
+
+1. `%APPDATA%\DigitalLab\config.json` に残存する旧機微フィールドと `user_config.json` を読み取ります。
+2. 平文認証情報を `dpapi:v1:` 暗号文に暗号化し、メモリ内で検証してから、原子書き込みで `user_config.json` に書き込み、再読み込みして検証します。
+3. ユーザー設定が安全にディスクに書き込まれた後、旧 `config.json` から機微フィールドをクリアします。
+4. いずれのステップでも失敗した場合、実行時は認証情報の使用をブロックし、平文にフォールバックしません。
+
+実行時の認証情報読み取りは DPAPI 暗号文のみを受け付け、平文の値はエラーとして扱われます。
+
+<Note>
+  `secret_store.get_secret()` 関数そのものは平文を受け付けます。入力が DPAPI 暗号文の場合は復号し、それ以外は平文をそのまま返します（そのドキュメンテーション文字列「歴史的平文の読み取りを許可する」と関数の動作は一致しています）。実際の実行時の認証情報読み取りはこれを経由しません。AI API Key（`core/ai_client.py`）と NAS パスワード（`core/nas_monitor.py`、`main.py` の `_get_nas_devices()`）は `get_runtime_secret()` を呼び出し、DPAPI 暗号文のみを受け付けます。現在のコードには `get_secret()` の呼び出し元はありません。もし将来の新しいコードがこれを使うようになれば、平文の認証情報が受け付けられることになります。
+</Note>
+
+## config.json 設定キー表
+
+以下は `config.json` の各設定キーのデフォルト値、型、範囲、および説明です。`config.schema.json` と `core/config_validator.py` に基づいています。
+
+| キー | デフォルト値 | 型 | 範囲 | 説明 |
+| --- | --- | --- | --- | --- |
+| `log_level` | `"INFO"` | `string` | `DEBUG` / `INFO` / `WARN` / `ERROR` | ログレベル |
+| `log_max_days` | `30` | `integer` | 1 から 365 | ログ保持日数 |
+| `log_format` | `"%(asctime)s ..."` | `string` | なし | Python logging フォーマット文字列 |
+| `auto_organize_enabled` | `false` | `boolean` | なし | 自動整理スイッチ |
+| `auto_organize_interval` | `3600` | `integer` | 1 から 86400 | 自動整理間隔（秒） |
+| `dashboard_port` | `8080` | `integer` | 1 から 65535 | Web Dashboard ポート |
+| `dashboard_host` | `"127.0.0.1"` | `string` | なし | Web Dashboard リッスンアドレス |
+| `monitor_threshold_cpu` | `80` | `integer` | 0 から 100 | CPU アラートしきい値（%） |
+| `monitor_threshold_memory` | `85` | `integer` | 0 から 100 | メモリ アラートしきい値（%） |
+| `monitor_threshold_disk` | `90` | `integer` | 0 から 100 | ディスク アラートしきい値（%） |
+| `monitor_alert_cooldown` | `300` | `integer` | 1 から 86400 | アラートクールダウン時間（秒） |
+| `monitor_interval` | `60` | `integer` | 1 から 86400 | デーモン収集間隔（秒） |
+
+以下のキーは `config.json` テンプレートに存在しますが、`config.schema.json` / `config_validator.py` の `_SCHEMA` では**定義されていません**。
+
+| キー | テンプレート値 | 説明 |
+| --- | --- | --- |
+| `hardware_acceleration` | `false` | テンプレートに残存する旧キーです。`main.js` が実際に読み取るのは UI 設定ファイル内の同名キー（[UI 設定ファイル](#ui-設定ファイル)を参照）であり、ここの値は読み取りません。 |
+| `nas_mock_enabled` | `true` | NAS Mock デバイスのスイッチ。シミュレートされた NAS データを生成するかどうかを制御します。コードではこのキーが欠落している場合は `false` として処理し、設定には対応するスイッチがあります。 |
+
+<Note>
+  この 2 つのキーは検証器の `_SCHEMA` にないため、その値は検証器によって修正または切り捨てられません。値の型が誤っている場合、対応する機能の想定された動作に影響する可能性があります。設定から書き込み可能な `nas_interval` も同様に `_SCHEMA` に含まれていません。
+</Note>
+
+## `ai.*` 設定キー
+
+`ai` フィールドは `user_config.json` に保存されます。以下のキーはソースコードで読み取られており、そのうち一部は設定ファイルを直接編集する必要があります。
+
+| キー | 説明 | 設定パネルの項目 |
+| --- | --- | --- |
+| `ai.provider` | デフォルトのプロバイダー（Ollama またはクラウド API） | あり |
+| `ai.ollama.base_url` / `ai.ollama.model` | Ollama のアドレスとモデル。デフォルトは `http://localhost:11434` と `llama3` | あり |
+| `ai.openai.base_url` / `ai.openai.model` | クラウド API のアドレスとモデル。デフォルトは `https://api.deepseek.com` と `deepseek-chat` | あり |
+| `ai.openai.api_key` | クラウド API Key（DPAPI 暗号文） | あり。設定済みかどうかのみ表示 |
+| `ai.history.enabled` / `ai.history.limit` / `ai.history.dir` | 会話履歴のスイッチ、件数上限、ディレクトリ | スイッチと上限はあり、ディレクトリはなし |
+| `ai.memory.enabled` / `ai.memory.dir` | AI 記憶のスイッチとディレクトリ | あり。ディレクトリはネイティブセレクターを使用 |
+| `ai.allow_insecure_http` | HTTP を許可するプライベートネットワークまたは Tailscale アドレスのリスト | なし |
+| `ai.ca_bundle` | カスタム CA Bundle ファイルパス。明示的に設定されたが存在しないか読み取り不能な場合、リクエストは失敗します | なし |
+
+設定保存時に、プロバイダー、サービスアドレス、API Key、CA Bundle パス、または記憶ディレクトリが変更された場合、または `ai.allow_insecure_http` のエントリが新たに追加された場合、`main.js` はシステムのネイティブ確認ダイアログをポップアップ表示して、これらの変更を一覧表示します（API Key は新しい値に更新される旨のみを通知し、ダイアログには値を表示しません）。
+
+### プライベートネットワーク HTTP の精密な認可
+
+AI サービスアドレスでは、デフォルトで HTTPS と loopback HTTP（`127.0.0.0/8`、`::1`、および loopback にのみ解決される `localhost`）が許可されています。プライベートネットワークまたは Tailscale アドレス上の HTTP サービスは、`ai.allow_insecure_http` に個別に登録する必要があります。
+
+```json
+{
+  "ai": {
+    "allow_insecure_http": ["192.168.1.20:11434"]
+  }
+}
+```
+
+- 各エントリは `ip[:port]` 形式の IP リテラルであり、プロトコルとパスは含みません。ポートを省略した場合は `80` でマッチします。
+- 完全一致の IP とポートのみにマッチし、ネットワークセグメント、ワイルドカード、ドメインには対応しません。
+- プライベートネットワーク（`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`、`fc00::/7`）と Tailscale（`100.64.0.0/10`、`fd7a:115c:a1e0::/48`）のアドレスに対してのみ有効です。ドメイン、公衆 IP、link-local アドレス、クラウドメタデータアドレスの HTTP は、登録されていても拒否されます。
+- 認可された後の HTTP リクエストも、依然として平文転送となります。
+
+完全なポリシーは [AI エンドポイントの通信ポリシー](/ja/digitallab/privacy/sensitive-information#ai-エンドポイントの通信ポリシー) を参照してください。
+
+## UI 設定ファイル
+
+インターフェースレベルの環境設定は `%APPDATA%\digital-lab\config.json` に保存されます（ディレクトリ名は kebab-case の `digital-lab` であり、Electron の userData ディレクトリです）。`main.js` が直接読み書きし、Python バックエンドは介在しません。以下のキーを含みます。
+
+| キー | 説明 |
+| --- | --- |
+| `theme` | `light` / `dark` |
+| `language` | `zh-CN` / `en-US` / `ja-JP` |
+| `splash_animation` | スプラッシュアニメーションのスイッチ |
+| `onboarding_done` | 初回起動ガイドが完了しているか |
+| `hardware_acceleration` | ハードウェアアクセラレーションのスイッチ（次回起動時に有効） |
+
+`hardware_acceleration` の判定ルール：このファイルが存在しない場合、ハードウェアアクセラレーションはオフになります（仮想マシンとの互換性）。ファイルが存在する場合、このキーが明示的に `false` のときのみオフとなり、キーが欠落していてもオンとみなされます。
+
+`main.js` はこれらのファイルを読み取る際、自動的に UTF-8 BOM を除去し、メモ帳などのツールで編集した後の JSON パース失敗を防ぎます。
+
+## 設定検証
+
+`core/config_validator.py` は Python バックエンド起動時に実行されます。検証対象は `%APPDATA%\DigitalLab\config.json` ではなく、**プログラムディレクトリ**下の `config.json` テンプレートです。
+
+1. プログラムディレクトリ下の `config.json` を読み取ります。
+2. `_SCHEMA` の各フィールドについて、型変換、範囲切り捨て、列挙検証を行います。
+3. 欠落、型エラー、範囲外が検出された場合、デフォルト値を自動的に埋めてファイルに書き戻し、`_SCHEMA` 外のフィールドは保持しつつ、検証レポートを出力します。
+4. 同一ディレクトリに `config.schema.json` を生成し、検証ルールと同期を取ります。
+
+ローカルマシンの実際のデータ、ログ、および設定ファイルの一覧を確認するには、[データ処理とストレージ](/ja/digitallab/privacy/data-storage) を参照してください。

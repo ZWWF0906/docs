@@ -29,12 +29,12 @@ pip install -r requirements.txt
 npm start
 ```
 
-该命令对应 `package.json` 中的 `electron .`。启动后 Electron 主进程会按以下逻辑寻找 Python 后端：
+该命令对应 `package.json` 中的 `electron .`。启动后 Electron 主进程按打包/开发两种模式寻找 Python 后端：
 
-1. 如果当前目录下存在 `backend.exe`，则直接执行 `backend.exe --json-mode`。
-2. 否则使用系统 `python` 命令运行 `python main.py --json-mode`。
+1. **打包模式**：使用内置的 `backend.exe --json-mode`。
+2. **开发模式**（`npm start`）：固定使用系统 `python` 命令运行 `python main.py --json-mode`，不依赖当前目录是否存在 `backend.exe`。
 
-因此，若你没有预先打包 `backend.exe`，请确保系统 `python` 已加入 `PATH`，且满足 Python 3.10+ 的版本要求。
+因此，开发模式下请确保系统 `python` 已加入 `PATH`，且满足 Python 3.10+ 的版本要求。
 
 ## Python 后端 CLI 模式
 
@@ -67,7 +67,7 @@ npm start
 
 **Python 子进程反复崩溃**
 
-`main.js` 中设有自动重试机制：Python 进程异常退出后，主进程会在 2 秒后尝试重新拉起，最多重试 3 次。超过上限后，主进程会向渲染进程发送 `python-status` 事件，通知用户后端已不可用。主进程日志只记录 Python 进程的退出码，以及每段 stderr 的提取标签与长度计数（`text.length`），不写入 stderr 原文或尾部内容。
+`main.js` 中设有自动重试机制：Python 进程异常退出后，主进程会在 2 秒后尝试重新拉起，最多重试 3 次；当后端首次返回包含硬件信息的有效状态时，重试计数归零。超过上限后，主进程会向渲染进程发送 `python-status` 事件，通知用户后端已不可用。主进程日志只记录 Python 进程的退出码，以及每段 stderr 的提取标签与长度计数（`text.length`），不写入 stderr 原文或尾部内容。
 
 **查看主进程日志**
 

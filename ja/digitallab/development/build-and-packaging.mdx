@@ -1,0 +1,123 @@
+---
+title: "ビルドとパッケージング"
+description: "DigitalLab のソースコードを配布可能な Windows デスクトップインストーラーにビルドする 2 ステップのフロー。"
+sidebarTitle: "ビルドとパッケージング"
+---
+
+DigitalLab のビルドは 2 つのステップに分かれています。まず PyInstaller で Python バックエンドを独立した実行ファイルにパッケージングし、次に electron-builder で Electron アプリを Windows インストーラーにパッケージングします。`npm run build` は `scripts/build-windows.ps1` を呼び出し、このスクリプトがバックエンドとフロントエンドのパッケージングを順番に実行し、完全性の検証を行います。
+
+## ステップ 1：Python バックエンドのパッケージング
+
+バックエンドのみを単独でパッケージングするには：
+
+```bash
+npm run build:backend
+```
+
+このコマンドは `scripts/build-backend.ps1` を呼び出し、スクリプト内部では以下のステップが実行されます。
+
+1. `-Python` パラメータまたは環境変数 `DLAB_PYTHON` で Python インタープリタが指定されていない場合、`.venv\Scripts\python.exe` とシステムの `python` を順に試行します。
+2. `backend.spec`、`main.py`、`core/` ディレクトリの存在を確認します。
+3. `python -m PyInstaller --noconfirm --clean backend.spec` を呼び出してパッケージングします。
+4. 生成された `dist\backend.exe` の存在とサイズが 0 より大きいことを確認し、SHA-256 ハッシュを出力します。
+
+### backend.spec の主要な設定
+
+リポジトリの `backend.spec` に基づき、パッケージングのパラメータは以下の通りです。
+
+| パラメータ | 値 | 説明 |
+| --- | --- | --- |
+| エントリスクリプト | `main.py` | Python バックエンドのメインエントリ |
+| `hiddenimports` | `paramiko`、`psutil`、`pynvml` + `core` のすべてのサブモジュール | 実行時の依存が完全に含まれることを保証 |
+| `datas` | `('core', 'core')` | `core/` ディレクトリをデータファイルとしてパッケージング |
+| `name` | `backend` | 出力される実行ファイル名は `backend.exe` |
+| `console` | `True` | コンソールウィンドウを保持し、デバッグ出力を容易にする |
+| `upx` | `False` | UPX 圧縮は未使用 |
+
+### 出力先
+
+PyInstaller はデフォルトで単一ファイルを `dist/backend.exe` に出力します。`package.json` の `extraResources` はこのパスから直接読み込みます。
+
+```json
+"extraResources": [
+  {
+    "from": "dist/backend.exe",
+    "to": "backend.exe"
+  }
+]
+```
+
+そのため、`backend.exe` を手動で `dist/` からプロジェクトのルートディレクトリにコピーする必要はありません。
+
+## ステップ 2：Electron アプリのパッケージング
+
+```bash
+npm run build
+```
+
+このコマンドは `scripts/build-windows.ps1` を呼び出し、スクリプト内部では以下の順序で実行されます。
+
+1. `package.json` のバージョン番号、extraResources の元パス、files 一覧を読み込んで検証します。
+2. 同じディレクトリの `build-backend.ps1` を呼び出して `dist\backend.exe` を生成します。
+3. `npm run build:electron`（すなわち `electron-builder --win`）を実行します。
+4. パッケージング後の `release\win-unpacked\resources\backend.exe` と元の `dist\backend.exe` の SHA-256 が一致するかを検証します。
+5. `core/test_hook_policy.js` がパッケージング成果物に含まれていることを確認します。
+6. `release/` ディレクトリに NSIS インストーラーが生成されたかを確認します。
+
+### electron-builder の設定
+
+設定は `package.json` の `build` フィールドから取得されます。
+
+| 設定項目 | 値 | 説明 |
+| --- | --- | --- |
+| `appId` | `com.digitallab.desktop` | アプリの識別子 |
+| `productName` | `DigitalLab` | 製品名 |
+| `directories.output` | `release` | 出力ディレクトリ |
+| `electronDist` | `node_modules/electron/dist` | Electron の配布ディレクトリ |
+| `asar` | `false` | ASAR パッケージングを無効化し、パネルリソースへのアクセスを容易にする |
+| `win.target` | `nsis` | Windows インストーラーの種別 |
+| `win.icon` | `build/icons/icon.ico` | インストーラーと実行ファイルのアイコン |
+| `nsis.oneClick` | `false` | インストールウィザードを表示し、サイレントのワンクリックインストールは行わない |
+| `nsis.allowToChangeInstallationDirectory` | `true` | ユーザーがインストールパスを変更できる |
+| `nsis.perMachine` | `true` | マシンレベルのディレクトリにインストール（管理者権限が必要） |
+| `nsis.allowElevation` | `true` | 権限昇格を許可 |
+| `files` | `main.js`、`preload.js`、`preload-terminal.js`、`renderer.js`、`renderer-terminal.js`、`dashboard.html`、`terminal.html`、`styles.css`、`panels/**/*`、`i18n.js`、`locales/**/*`、`build/icons/**/*`、`build/fonts/**/*`、`core/test_hook_policy.js`、`theme-init.js`、`lang-init.js`、`boot-text.js`、`onboarding.js`、`splash.js` | アプリにパッケージングされるファイル一覧 |
+| `extraResources` | `dist/backend.exe` → `resources/backend.exe` | Python バックエンドを追加リソースとしてパッケージング |
+
+パッケージングの成果物は `release/` ディレクトリに配置されます。NSIS インストーラーのデフォルト出力名は `DigitalLab Setup <version>.exe` です。例：`DigitalLab Setup 1.6.0.exe`。
+
+## APPX 設定（Microsoft Store）
+
+`package.json` の `appx` フィールドは、Microsoft Store 用の APPX パッケージのマニフェスト情報を定義します。
+
+| 設定項目 | 値 | 説明 |
+| --- | --- | --- |
+| `identityName` | `ZWWF0906.DigitalLab` | パッケージの識別名 |
+| `publisherDisplayName` | `ZWWF0906` | 発行者の表示名 |
+| `applicationId` | `DigitalLab` | アプリ ID |
+| `artifactName` | `DigitalLab-${version}.${ext}` | 成果物のファイル名。例：`DigitalLab-1.6.0.appx` |
+| `languages` | `en-US`、`zh-CN`、`ja-JP` | サポートする言語 |
+| `backgroundColor` | `#1a1a2e` | タイルの背景色 |
+| `showNameOnTiles` | `true` | タイルにアプリ名を表示 |
+
+`win.target` は現在 `nsis` のみに設定されています。リポジトリ内のビルドスクリプト（`build-windows.ps1`）も NSIS インストーラーのみを検証し、APPX パッケージングのステップは含まれていません。
+
+## .gitignore に含まれるビルド成果物
+
+リポジトリの `.gitignore` は以下のファイルを除外しており、誤ってコミットされることを防ぎます。
+
+- `backend.exe*`（PyInstaller が出力した実行ファイル）
+- `dist/`（PyInstaller のデフォルト出力ディレクトリ）
+- `release/`（electron-builder の出力ディレクトリ）
+
+## ビルドのチェックリスト
+
+1. Node.js 18+ と Python 3.10+ をインストールしてください。
+2. `npm install` を実行してフロントエンドの依存をインストールしてください。
+3. `pip install -r requirements.txt` と `pip install pyinstaller` を実行して Python の依存をインストールしてください。
+4. `npm run build:backend`（または直接 `npm run build`）を実行し、`dist/backend.exe` が生成されたことを確認してください。
+5. `npm run build` を実行し、`release/` ディレクトリにインストーラーが生成されたことを確認してください。
+
+## 配布チャンネルの説明
+
+DigitalLab 1.6.0 は、GitHub Releases で単体インストーラーを提供する最後のバージョンです。1.6.1 以降、正式版は [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) のみで配布されます。GitHub は引き続き、ソースコード、ドキュメント、コラボレーションの場として運用されます。自己ビルドのインストーラーはローカルでのテストに使用できますが、公式の単体インストーラーは GitHub Releases では提供されなくなります。

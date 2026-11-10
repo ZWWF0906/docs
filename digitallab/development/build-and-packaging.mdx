@@ -4,13 +4,22 @@ description: "将 DigitalLab 源码构建为可分发的 Windows 桌面安装程
 sidebarTitle: "构建与打包"
 ---
 
-构建 DigitalLab 分为两步：先用 PyInstaller 将 Python 后端打包为独立可执行文件，再用 electron-builder 将 Electron 应用打包为 Windows 安装程序。
+构建 DigitalLab 分为两步：先用 PyInstaller 将 Python 后端打包为独立可执行文件，再用 electron-builder 将 Electron 应用打包为 Windows 安装程序。`npm run build` 会调用 `scripts/build-windows.ps1`，由该脚本按顺序完成后端与前端打包，并执行完整性校验。
 
 ## 第一步：打包 Python 后端
 
+单独打包后端可运行：
+
 ```bash
-pyinstaller backend.spec
+npm run build:backend
 ```
+
+该命令调用 `scripts/build-backend.ps1`，脚本内部执行以下步骤：
+
+1. 若未通过 `-Python` 参数或环境变量 `DLAB_PYTHON` 指定 Python 解释器，则依次尝试 `.venv\Scripts\python.exe` 与系统 `python`。
+2. 检查 `backend.spec`、`main.py` 和 `core/` 目录是否存在。
+3. 调用 `python -m PyInstaller --noconfirm --clean backend.spec` 进行打包。
+4. 校验生成的 `dist\backend.exe` 是否存在且大小大于 0，输出 SHA-256 哈希。
 
 ### backend.spec 关键配置
 
@@ -23,22 +32,22 @@ pyinstaller backend.spec
 | `datas` | `('core', 'core')` | 将 `core/` 目录作为数据文件打包 |
 | `name` | `backend` | 输出可执行文件名为 `backend.exe` |
 | `console` | `True` | 保留控制台窗口，便于调试输出 |
-| `upx` | `True` | 启用 UPX 压缩 |
+| `upx` | `False` | 未启用 UPX 压缩 |
 
-### 输出位置注意事项
+### 输出位置
 
-PyInstaller 默认将单文件输出到 `dist/backend.exe`。而 `package.json` 的 `extraResources` 配置要求从项目根目录读取 `backend.exe`：
+PyInstaller 默认将单文件输出到 `dist/backend.exe`。`package.json` 的 `extraResources` 直接从此路径读取：
 
 ```json
 "extraResources": [
   {
-    "from": "backend.exe",
+    "from": "dist/backend.exe",
     "to": "backend.exe"
   }
 ]
 ```
 
-因此，在运行 `npm run build` 之前，你需要确保 `backend.exe` 位于项目根目录。若 PyInstaller 输出在 `dist/` 下，请手动将其移至根目录。该步骤在当前源码中未提供自动复制命令，需自行确认。
+因此无需手动将 `backend.exe` 从 `dist/` 复制到项目根目录。
 
 ## 第二步：打包 Electron 应用
 
@@ -46,22 +55,52 @@ PyInstaller 默认将单文件输出到 `dist/backend.exe`。而 `package.json` 
 npm run build
 ```
 
-该命令执行 `electron-builder --win`，配置来自 `package.json` 的 `build` 字段：
+该命令调用 `scripts/build-windows.ps1`，脚本内部按顺序执行：
+
+1. 读取并校验 `package.json` 版本号、extraResources 来源路径和 files 清单。
+2. 调用同级目录的 `build-backend.ps1` 生成 `dist\backend.exe`。
+3. 执行 `npm run build:electron`（即 `electron-builder --win`）。
+4. 校验打包后的 `release\win-unpacked\resources\backend.exe` 与原始 `dist\backend.exe` 的 SHA-256 是否一致。
+5. 确认 `core/test_hook_policy.js` 已包含在打包产物中。
+6. 检查 `release/` 目录下是否生成了 NSIS 安装程序。
+
+### electron-builder 配置
+
+配置来自 `package.json` 的 `build` 字段：
 
 | 配置项 | 值 | 说明 |
 | --- | --- | --- |
 | `appId` | `com.digitallab.desktop` | 应用标识符 |
 | `productName` | `DigitalLab` | 产品名称 |
 | `directories.output` | `release` | 输出目录 |
+| `electronDist` | `node_modules/electron/dist` | Electron 分发目录 |
 | `asar` | `false` | 禁用 ASAR 打包，便于访问面板资源 |
 | `win.target` | `nsis` | Windows 安装程序类型 |
+| `win.icon` | `build/icons/icon.ico` | 安装包与可执行文件图标 |
 | `nsis.oneClick` | `false` | 显示安装向导，而非静默一键安装 |
 | `nsis.allowToChangeInstallationDirectory` | `true` | 允许用户修改安装路径 |
-| `win.icon` | `build/icons/icon.ico` | 安装包与可执行文件图标 |
-| `files` | `main.js`、`preload.js`、`dashboard.html`、`styles.css`、`panels/**/*`、`i18n.js`、`locales/**/*`、`build/icons/**/*`、`build/fonts/**/*` | 被打包进应用的文件清单 |
-| `extraResources` | `backend.exe` → `resources/backend.exe` | Python 后端作为额外资源打包 |
+| `nsis.perMachine` | `true` | 安装到机器级别目录（需要管理员权限） |
+| `nsis.allowElevation` | `true` | 允许提升权限 |
+| `files` | `main.js`、`preload.js`、`preload-terminal.js`、`renderer.js`、`renderer-terminal.js`、`dashboard.html`、`terminal.html`、`styles.css`、`panels/**/*`、`i18n.js`、`locales/**/*`、`build/icons/**/*`、`build/fonts/**/*`、`core/test_hook_policy.js`、`theme-init.js`、`lang-init.js`、`boot-text.js`、`onboarding.js`、`splash.js` | 被打包进应用的文件清单 |
+| `extraResources` | `dist/backend.exe` → `resources/backend.exe` | Python 后端作为额外资源打包 |
 
-打包产物位于 `release/` 目录下，包括 `DigitalLab Setup.exe` 安装程序。
+打包产物位于 `release/` 目录下。NSIS 安装程序默认输出名称为 `DigitalLab Setup <version>.exe`，例如 `DigitalLab Setup 1.6.0.exe`。
+
+## APPX 配置（Microsoft Store）
+
+`package.json` 中的 `appx` 字段定义了 APPX 包（用于 Microsoft Store）的清单信息：
+
+| 配置项 | 值 | 说明 |
+| --- | --- | --- |
+| `identityName` | `ZWWF0906.DigitalLab` | 包标识名 |
+| `publisherDisplayName` | `ZWWF0906` | 发布者显示名称 |
+| `applicationId` | `DigitalLab` | 应用 ID |
+| `artifactName` | `DigitalLab-${version}.${ext}` | 产物文件名，如 `DigitalLab-1.6.0.appx` |
+| `languages` | `en-US`、`zh-CN`、`ja-JP` | 支持语言 |
+| `backgroundColor` | `#1a1a2e` | 磁贴背景色 |
+| `showNameOnTiles` | `true` | 在磁贴上显示应用名称 |
+
+`win.target` 当前仅配置为 `nsis`；仓库中的构建脚本（`build-windows.ps1`）也只校验 NSIS 安装程序，不包含 APPX 打包步骤。
 
 ## .gitignore 中的构建产物
 
@@ -76,5 +115,9 @@ npm run build
 1. 安装 Node.js 18+ 与 Python 3.10+。
 2. 执行 `npm install` 安装前端依赖。
 3. 执行 `pip install -r requirements.txt` 与 `pip install pyinstaller` 安装 Python 依赖。
-4. 执行 `pyinstaller backend.spec`，确认 `backend.exe` 已生成在项目根目录。
+4. 执行 `npm run build:backend`（或直接执行 `npm run build`），确认 `dist/backend.exe` 已生成。
 5. 执行 `npm run build`，确认安装程序在 `release/` 目录中生成。
+
+## 发布渠道说明
+
+DigitalLab 1.6.0 是最后一个通过 GitHub Releases 提供独立安装包的版本。从 1.6.1 起，正式版本仅通过 [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) 发布。GitHub 继续作为源码、文档和协作平台。自构建的安装包可用于本地测试，但官方独立安装包不再由 GitHub Releases 提供。

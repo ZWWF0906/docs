@@ -1,0 +1,74 @@
+---
+title: "Dashboard and monitoring"
+description: "Monitor real-time CPU, memory, disk, network, and GPU status; view performance history, process lists, and NAS device status cards."
+sidebarTitle: "Dashboard"
+---
+
+The Dashboard is the default home page of DigitalLab. It shows real-time status for the local machine and NAS devices in one place. When you open the app, you can view all core metrics in the **Dashboard** panel.
+
+## Real-time monitoring cards
+
+The top area shows five real-time metric cards: **CPU**, **Memory**, **Disk**, **Network**, and **GPU**. Each card includes the current value, a mini trend line, a health status light, and a progress bar.
+
+- **Status light colors**:
+  - Green: metric is normal
+  - Amber: metric exceeds the first threshold
+  - Red: metric exceeds the second threshold
+- **Mini trend line**: shows the trend across the latest 60 samples, helping you judge the direction of the metric at a glance.
+- **Extra info**: the CPU card shows current frequency, the memory card shows total capacity, the disk card shows total capacity, and the GPU card shows the GPU model.
+
+## NAS device status cards
+
+If you add NAS devices in the **Settings** panel, the Dashboard shows corresponding NAS status cards. Each card displays the device's CPU, memory, and disk usage, as well as temperature and uptime.
+
+- Online devices show data normally
+- Offline devices appear semi-transparent and have a retry button
+- When no NAS is configured, the UI prompts you to go to Settings to add a device
+
+## Local details area
+
+### Hardware information
+
+Click the **Hardware Info** header to expand or collapse this area. When expanded, it shows five hardware cards:
+
+- **Processor**: model, core count, thread count, current frequency
+- **Graphics card**: model, VRAM capacity, VRAM type
+- **Memory**: total capacity, type, frequency
+- **Drive**: total capacity, model, type
+- **System**: OS version, distribution info
+
+If a NAS device is online and hardware information has already been collected, its hardware cards also appear in this area.
+
+### Top 15 processes
+
+Click the **Top 15 Processes** header to expand or collapse the process list. The list contains the following columns:
+
+| Column | Description |
+| --- | --- |
+| Name | Process name |
+| CPU % | CPU usage percentage |
+| Memory % | Memory usage percentage |
+| RSS | Actual memory used |
+| PID | Process ID |
+
+## Threshold alert notifications
+
+Starting with v1.4.0, the system shows a desktop notification when CPU, memory, or disk stays above the set threshold. It will not repeat the alert until the value drops back below the threshold.
+
+Default thresholds are as follows:
+
+| Metric | Default threshold |
+| --- | --- |
+| CPU alert | 80% |
+| Memory alert | 85% |
+| Disk alert | 90% |
+
+You can adjust these thresholds in the **Collection Settings** tab of the **Settings** panel.
+
+## Performance history
+
+According to the README, the Dashboard supports performance history charts showing averages and peaks over the last 24 hours. Performance data is collected locally by the backend and saved. For storage location and format, see [Data processing and storage](/en/digitallab/privacy/data-storage).
+
+<Note>
+  In the current main branch (v1.6.0) source code, the backend `main.py` still provides the `get_history` command (parameter: number of hours), but the preload script `preload.js` no longer exposes the `getHistory` interface, and the Dashboard panel code does not contain a call to this command for the history chart. How the 24-hour history chart described in the README is actually rendered in the current UI is pending confirmation by the maintainer.
+</Note>

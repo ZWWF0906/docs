@@ -1,0 +1,123 @@
+---
+title: "Build and packaging"
+description: "The two-step process for building DigitalLab source into a distributable Windows desktop installer."
+sidebarTitle: "Build and packaging"
+---
+
+Building DigitalLab is a two-step process: first use PyInstaller to package the Python backend as a standalone executable, then use electron-builder to package the Electron app as a Windows installer. `npm run build` calls `scripts/build-windows.ps1`, which completes the backend and frontend packaging in sequence and performs integrity checks.
+
+## Step 1: Package the Python backend
+
+To package the backend independently, run:
+
+```bash
+npm run build:backend
+```
+
+This command calls `scripts/build-backend.ps1`, which performs the following steps:
+
+1. If no Python interpreter is specified via the `-Python` parameter or the `DLAB_PYTHON` environment variable, it tries `.venv\Scripts\python.exe` and then system `python` in turn.
+2. Checks whether `backend.spec`, `main.py`, and the `core/` directory exist.
+3. Calls `python -m PyInstaller --noconfirm --clean backend.spec` to build.
+4. Verifies that the generated `dist\backend.exe` exists and its size is greater than 0, and outputs the SHA-256 hash.
+
+### Key configuration in backend.spec
+
+Based on the `backend.spec` in the repository, the packaging parameters are:
+
+| Parameter | Value | Description |
+| --- | --- | --- |
+| Entry script | `main.py` | Python backend main entry |
+| `hiddenimports` | `paramiko`, `psutil`, `pynvml` + all `core` submodules | Ensures runtime dependencies are fully included |
+| `datas` | `('core', 'core')` | Packages the `core/` directory as data files |
+| `name` | `backend` | Output executable name is `backend.exe` |
+| `console` | `True` | Keeps the console window for debugging output |
+| `upx` | `False` | UPX compression not enabled |
+
+### Output location
+
+PyInstaller outputs the single-file executable to `dist/backend.exe` by default. The `extraResources` field in `package.json` reads directly from this path:
+
+```json
+"extraResources": [
+  {
+    "from": "dist/backend.exe",
+    "to": "backend.exe"
+  }
+]
+```
+
+Therefore no manual copying of `backend.exe` from `dist/` to the project root is needed.
+
+## Step 2: Package the Electron app
+
+```bash
+npm run build
+```
+
+This command calls `scripts/build-windows.ps1`, which performs the following steps in order:
+
+1. Reads and validates the `package.json` version number, extraResources source path, and files manifest.
+2. Calls the sibling `build-backend.ps1` to generate `dist\backend.exe`.
+3. Executes `npm run build:electron` (that is, `electron-builder --win`).
+4. Validates that the SHA-256 of the packaged `release\win-unpacked\resources\backend.exe` matches the original `dist\backend.exe`.
+5. Confirms that `core/test_hook_policy.js` is included in the packaged output.
+6. Checks whether an NSIS installer has been generated in the `release/` directory.
+
+### electron-builder configuration
+
+Configuration comes from the `build` field in `package.json`:
+
+| Configuration item | Value | Description |
+| --- | --- | --- |
+| `appId` | `com.digitallab.desktop` | Application identifier |
+| `productName` | `DigitalLab` | Product name |
+| `directories.output` | `release` | Output directory |
+| `electronDist` | `node_modules/electron/dist` | Electron distribution directory |
+| `asar` | `false` | Disables ASAR packaging for easy access to panel resources |
+| `win.target` | `nsis` | Windows installer type |
+| `win.icon` | `build/icons/icon.ico` | Icon for the installer and executable |
+| `nsis.oneClick` | `false` | Shows the setup wizard instead of silent one-click install |
+| `nsis.allowToChangeInstallationDirectory` | `true` | Allows user to change the installation path |
+| `nsis.perMachine` | `true` | Installs to a machine-level directory (requires administrator privileges) |
+| `nsis.allowElevation` | `true` | Allows elevation |
+| `files` | `main.js`, `preload.js`, `preload-terminal.js`, `renderer.js`, `renderer-terminal.js`, `dashboard.html`, `terminal.html`, `styles.css`, `panels/**/*`, `i18n.js`, `locales/**/*`, `build/icons/**/*`, `build/fonts/**/*`, `core/test_hook_policy.js`, `theme-init.js`, `lang-init.js`, `boot-text.js`, `onboarding.js`, `splash.js` | File manifest packaged into the app |
+| `extraResources` | `dist/backend.exe` → `resources/backend.exe` | Python backend packaged as an extra resource |
+
+The packaged output is located in the `release/` directory. The NSIS installer default output name is `DigitalLab Setup <version>.exe`, for example `DigitalLab Setup 1.6.0.exe`.
+
+## APPX configuration (Microsoft Store)
+
+The `appx` field in `package.json` defines the manifest information for the APPX package (used for Microsoft Store):
+
+| Configuration item | Value | Description |
+| --- | --- | --- |
+| `identityName` | `ZWWF0906.DigitalLab` | Package identity name |
+| `publisherDisplayName` | `ZWWF0906` | Publisher display name |
+| `applicationId` | `DigitalLab` | Application ID |
+| `artifactName` | `DigitalLab-${version}.${ext}` | Artifact file name, e.g. `DigitalLab-1.6.0.appx` |
+| `languages` | `en-US`, `zh-CN`, `ja-JP` | Supported languages |
+| `backgroundColor` | `#1a1a2e` | Tile background color |
+| `showNameOnTiles` | `true` | Displays the app name on tiles |
+
+`win.target` is currently configured only as `nsis`; the build script in the repository (`build-windows.ps1`) only validates the NSIS installer and does not include an APPX packaging step.
+
+## Build artifacts in .gitignore
+
+The repository `.gitignore` already excludes the following files to avoid accidental commits:
+
+- `backend.exe*` (PyInstaller output executable)
+- `dist/` (PyInstaller default output directory)
+- `release/` (electron-builder output directory)
+
+## Build checklist
+
+1. Install Node.js 18+ and Python 3.10+.
+2. Run `npm install` to install frontend dependencies.
+3. Run `pip install -r requirements.txt` and `pip install pyinstaller` to install Python dependencies.
+4. Run `npm run build:backend` (or directly `npm run build`), and confirm that `dist/backend.exe` is generated.
+5. Run `npm run build`, and confirm that the installer is generated in the `release/` directory.
+
+## Distribution policy
+
+DigitalLab v1.6.0 is the last version to provide a standalone installer through GitHub Releases. Starting with v1.6.1, official releases are distributed only through the [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5). GitHub continues to serve as the platform for source code, documentation and collaboration. Self-built installers can be used for local testing, but official standalone installers are no longer provided by GitHub Releases.

@@ -1,0 +1,65 @@
+---
+title: "開発環境"
+description: "DigitalLab の開発環境を構築するために必要な Node.js、Python、および依存関係のバージョン要件。"
+sidebarTitle: "開発環境"
+---
+
+DigitalLab は Electron + Python のデュアルプロセスアーキテクチャを採用しており、開発を開始する前に Node.js と Python の両方の環境を準備する必要があります。
+
+## 環境要件
+
+| コンポーネント | バージョン要件 |
+| --- | --- |
+| Node.js | 18+ |
+| Python | 3.10+ |
+| オペレーティングシステム | パッケージング対象は Windows（electron-builder `--win`） |
+
+<Note>
+  requirements.txt の先頭にあるコメントでは、実行環境として Windows 7/8/10/11 x64 と Python 3.7+ と記載されており、`core/config.py` でチェックされる最小バージョンも Python 3.7 です。README での要件は Python 3.10+ と Windows 10+ となっており、本ドキュメントは README の要件を基準とします。Python 3.7 から 3.9 の間のバージョンを使用すると、互換性の問題が発生する可能性があります。
+</Note>
+
+## Node.js 依存関係
+
+フロントエンドおよびデスクトップ層の依存関係は `npm install` でインストールします。主要なパッケージは以下の通りです（`package.json` より引用）：
+
+| パッケージ名 | 用途 |
+| --- | --- |
+| `electron` | Electron メインプロセスとレンダラープロセスのランタイム |
+| `electron-builder` | アプリケーションのパッケージングとインストーラーの生成 |
+| `@xterm/xterm` | SSH ターミナルのフロントエンドレンダリング |
+| `@xterm/addon-fit` | ターミナルのサイズ自動調整 |
+| `@fontsource-variable/inter` | UI フォント（Inter） |
+| `@fontsource-variable/jetbrains-mono` | ターミナル用等幅フォント（JetBrains Mono） |
+| `@fontsource-variable/orbitron` | 装飾フォント（Orbitron） |
+
+## Python 依存関係
+
+Python バックエンドの依存関係は `requirements.txt` に記載されており、`pip install -r requirements.txt` でのインストールを推奨します：
+
+| パッケージ名 | 最低バージョン | 用途 |
+| --- | --- | --- |
+| `psutil` | 5.8 | システム監視（CPU、メモリ、ディスク、プロセスの収集） |
+| `paramiko` | 3.4 | SSH リモート監視とターミナル接続 |
+| `flask` | 2.0 | オプションの Web Dashboard API |
+| `flask-cors` | 4.0 | Web Dashboard のクロスオリジン対応 |
+| `matplotlib` | 3.3 | グラフ生成（`report` コマンド） |
+
+以下の依存関係はオプションであり、インストールするとハードウェア情報の収集精度が向上します：
+
+| パッケージ名 | 用途 |
+| --- | --- |
+| `nvidia-ml-py` (>=12.0) | NVIDIA GPU の温度と利用率（NVIDIA ドライバーが必要） |
+| `py-cpuinfo` (>=9.0) | CPU 型番の高精度識別 |
+| `pyamdgpuinfo` (>=1.0) | AMD GPU 情報の収集（ROCm/ドライバーが必要） |
+
+## パッケージング依存関係
+
+README のパッケージング手順では、`pyinstaller backend.spec` を使用して `backend.exe` を生成しますが、`pyinstaller` は **requirements.txt には記載されていません**。パッケージングを実行する必要がある場合は、個別にインストールしてください：
+
+```bash
+pip install pyinstaller
+```
+
+## プラットフォーム制限
+
+現在、パッケージング設定は Windows のみを対象としています（`electron-builder --win`、NSIS ターゲット）。本ドキュメントでは、他のオペレーティングシステムの構築手順は取り扱いません。

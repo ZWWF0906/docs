@@ -1,0 +1,111 @@
+---
+title: "Sensitive information handling"
+description: "How DigitalLab identifies, stores, and protects sensitive information such as API keys and NAS SSH passwords, including DPAPI encryption, AI endpoint transport policy, and SSH host trust."
+---
+
+This page explains how DigitalLab identifies, stores, and protects sensitive information, and the practical steps you can take. Content is based on v1.6.0 code.
+
+## Sensitive information protection
+
+The following information is treated as sensitive data. It is stored in `%APPDATA%\DigitalLab\user_config.json`, separated from the public `config.json`, and is not included in the installer.
+
+### AI service API Key
+
+- **Purpose**: used to authenticate to the AI endpoint you configure.
+- **Transmission method**: sent only as the HTTP request header `Authorization: Bearer` to the endpoint you configure.
+- **Where it is not written**: not written into the request body (JSON body), prompts, system messages, or conversation content, so it is not part of the request content visible to the model.
+- **Redirection**: AI requests do not follow HTTP redirects, so the authentication header is not forwarded to other addresses.
+- **Transport encryption**: remote endpoints must use HTTPS. See [AI endpoint transport policy](#ai-endpoint-transport-policy) below.
+
+### NAS device SSH password
+
+- **Purpose**: used only to connect over SSH to the NAS you configure, for collecting monitoring data and establishing terminal sessions.
+- **What it does not enter**: not sent with AI requests, and does not enter the AI request context (the context contains only the NAS name, online state, and load metrics).
+- **Unencrypted NAS fields**: NAS name, host address, port, and username are not encrypted fields; they are saved as readable JSON in `user_config.json`.
+
+### Authentication token
+
+The `auth_token` field may appear in `user_config.json` (written by early versions). It is not used by the current version. If present, you may delete it manually.
+
+## Credential encryption (DPAPI)
+
+Starting with v1.6.0, the values of the following three fields are encrypted with Windows DPAPI under the current user scope, and saved as ciphertext with the `dpapi:v1:` prefix:
+
+| Field | Content |
+| --- | --- |
+| `ai.openai.api_key` | API Key for OpenAI-compatible APIs |
+| `nas_devices[].password` | SSH password for each NAS |
+| `auth_token` | Legacy authentication token |
+
+Other content in `user_config.json` (AI provider, service address, model name, memory and history settings, and NAS name, host, port, username) is still saved as readable JSON.
+
+### Migration at startup
+
+- At startup, the app checks credential fields. Plaintext credentials left by older versions are encrypted in memory and verified, then atomically written back to `user_config.json` and re-read for verification.
+- If old sensitive fields remain in the legacy `%APPDATA%\DigitalLab\config.json`, they are migrated to `user_config.json` only when the corresponding field is missing there; after successful verification they are cleaned from the old file.
+- If any step of migration or verification fails, the app refuses to use unprotected credentials and does not silently fall back to plaintext.
+
+### Display in the Settings panel
+
+- The Settings panel receives only a "configured / masked" state; it does not receive credential plaintext or ciphertext.
+- A saved API Key is shown as "configured (enter a new value to replace)" and can be deleted by clicking **Clear Key**. NAS passwords work the same way: you can clear a saved password.
+- The following actions trigger a system confirmation dialog first; canceling aborts the action:
+  - **AI sensitive setting change** (when saving settings): AI provider change; cloud AI address (`ai.openai.base_url`) or Ollama address (`ai.ollama.base_url`) change; CA certificate path (`ai.ca_bundle`) or AI memory directory change; re-entering API Key (the dialog shows only "will be updated to a new value", not the value); adding an entry to `ai.allow_insecure_http` (removing entries does not trigger confirmation).
+  - **Adding a NAS device**: judged by device name; if no device with that name exists in the configuration, it is treated as new, and the dialog shows the host and port.
+  - **Changing the host address or port of an existing NAS**: the dialog lists the connection target before and after the change.
+  - **Deleting a NAS device**.
+  - **Clearing credentials**: clearing the AI API Key, NAS password, or authentication token; the dialog warns that the action cannot be undone.
+- Changing only the username, password, or other fields of an existing NAS device (without changing the host address or port) does not trigger a confirmation dialog.
+
+<Warning>
+  DPAPI protection is bound to the current Windows user: it prevents other Windows users from reading or decrypting on another machine, but in principle any program running as the same user can also call DPAPI to decrypt. `user_config.json` remains a sensitive file; handle it carefully and do not share it.
+</Warning>
+
+## AI endpoint transport policy
+
+Before sending an AI request (Ollama or OpenAI-compatible API), the app checks the service address you configured against the following rules:
+
+| Target address | Rule |
+| --- | --- |
+| Remote HTTPS | Allowed. Uses the default TLS certificate verification; the app does not provide a switch to disable verification. |
+| Loopback HTTP: `127.0.0.0/8`, `::1`, `localhost` | Allowed. `localhost` must resolve entirely to loopback addresses. The connection is pinned to the resolved IP and bypasses the system proxy. |
+| Private-network HTTP: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7` | Denied by default; allowed after exact registration by IP and port in `ai.allow_insecure_http`. |
+| Tailscale HTTP: `100.64.0.0/10`, `fd7a:115c:a1e0::/48` | Same as private-network rule. |
+| Domain-form HTTP | Denied. |
+| Public-IP HTTP | Denied. |
+| Link-local (`169.254.0.0/16`, `fe80::/10`) and cloud metadata address HTTP | Denied. |
+
+Additional notes:
+
+- **HTTP authorization format**: each entry in `ai.allow_insecure_http` must be an IP literal in the form `ip[:port]`, without a protocol prefix. When the port is omitted, 80 is used. Only private-network or Tailscale addresses are allowed; domains and other categories are rejected. The current Settings UI does not provide this entry, so direct configuration editing is required; adding a registration triggers a system confirmation dialog.
+- **Authorized HTTP is still plaintext transmission**: exact authorization only allows the connection; it does not encrypt the connection.
+- **Custom CA**: the configuration item `ai.ca_bundle` can specify a custom CA certificate file. After it is explicitly configured, missing or unreadable files cause the request to fail; there is no fallback to system trust. The current Settings UI also does not provide this entry.
+- **Redirection**: all AI requests do not follow HTTP redirects.
+
+## NAS connections
+
+- The app connects over SSH to the host address and port you enter in the Device Center. It does not require the target to be on the local network. The network path the data travels depends on that address and your network environment (for example local network, VPN, or Tailscale).
+- When connecting to a new host for the first time, the app displays the host key fingerprint and asks you to verify it before clicking "I verified it; trust this host". Trust records are saved in `%APPDATA%\DigitalLab\ssh\ssh_trust.json` (containing only the host public key and fingerprint, not credentials).
+- If the key of a trusted host changes, the connection is rejected.
+
+## Two-tier configuration storage
+
+DigitalLab uses a two-tier configuration storage model that separates public settings from sensitive data:
+
+| Configuration file | Location | Content |
+| --- | --- | --- |
+| `config.json` | `%APPDATA%\DigitalLab\` (at runtime); a file with the same name in the program directory serves as a template and is read as a fallback when the runtime file does not exist | Public configuration: ports, thresholds, log levels, toggles, etc. |
+| `user_config.json` | `%APPDATA%\DigitalLab\` | Sensitive configuration: the entire `ai` and `nas_devices` sections, and `auth_token`; credential values inside are DPAPI ciphertext |
+
+When saving `config.json`, sensitive fields are filtered out; `ai`, `nas_devices`, and `auth_token` are not written into it.
+
+For the specific meanings and defaults of configuration items, see [Configuration and storage](/en/digitallab/architecture/configuration-storage).
+
+## Practical recommendations
+
+- Use `https` endpoints when connecting to cloud AI models; register HTTP authorization for private-network or Tailscale addresses only when there is a genuine need, and understand that the connection is not encrypted.
+- Do not share `user_config.json`, and do not copy it to locations accessible by others.
+- Monitoring logs and UI logs may contain NAS names, host addresses, and exception information. Review the content before sharing logs. For details, see [Data processing and storage](/en/digitallab/privacy/data-storage#logs).
+- When trusting a NAS host for the first time, verify the fingerprint against the actual host key on the device.
+- Do not enter sensitive information into conversations or configuration that you do not want sent to a cloud provider.
+- If the `auth_token` field exists in `user_config.json`, you may delete it manually.

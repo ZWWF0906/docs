@@ -1,0 +1,76 @@
+---
+title: "Product overview"
+description: "DigitalLab is a local-first desktop app for personal device management, data awareness, and AI extensions."
+sidebarTitle: "Product overview"
+---
+
+DigitalLab is a **personal digital laboratory platform**, a desktop app for personal device management, data awareness, and AI extensions. Local-first, modular, and extensible, it transforms your personal computer into a programmable, perceptive, and conversational digital workspace.
+
+<Info>
+  **Distribution policy change**: DigitalLab v1.6.0 is the last version to provide a standalone installer through GitHub Releases. Starting with v1.6.1, official releases are distributed only through the [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5). GitHub continues to serve as the platform for source code, documentation, and collaboration.
+</Info>
+
+## Core design principles
+
+DigitalLab is designed around four key principles:
+
+- **All data flows into system_state, and all UI consumes system_state**: single source of truth, decoupled front end and back end
+- **Local-first, modular, and extensible**: core features work without a network, and panels load on demand
+- **Electron core communication does not rely on HTTP**: uses a JSON Lines IPC protocol for zero network overhead; an optional Web Dashboard service is also available
+- **Privacy First**: device data is saved locally by default, and sensitive configuration is stored in the user directory; AI and NAS credentials are encrypted with the current Windows user's DPAPI, and remote AI endpoints require HTTPS (see [Sensitive information handling](/en/digitallab/privacy/sensitive-information))
+
+## Main feature panels
+
+DigitalLab consists of five modular panels:
+
+<CardGroup cols={2}>
+  <Card title="Dashboard and monitoring" icon="gauge" href="/en/digitallab/user-guide/dashboard">
+    Real-time monitoring of CPU, memory, disk, and network speed, performance history charts, process list, and NAS status cards
+  </Card>
+
+  <Card title="Device Center" icon="microchip" href="/en/digitallab/user-guide/device-center">
+    Full overview of local hardware information: CPU, GPU, memory, disk, monitor, network adapter, and more
+  </Card>
+
+  <Card title="NAS and SSH terminal" icon="terminal" href="/en/digitallab/user-guide/nas-ssh-terminal">
+    SSH terminal based on xterm.js, connecting remotely to trusted NAS devices in an independent window
+  </Card>
+
+  <Card title="AI Assistant" icon="bot" href="/en/digitallab/user-guide/ai-assistant">
+    Supports Ollama local models or OpenAI-compatible APIs, multi-turn conversations, and automatic injection of system state context
+  </Card>
+
+  <Card title="Settings and preferences" icon="gear" href="/en/digitallab/user-guide/settings">
+    Log level, monitoring thresholds, NAS device management, AI provider switching, theme, and hardware acceleration toggle
+  </Card>
+</CardGroup>
+
+<Warning>
+  The SSH terminal and AI Assistant are currently in testing. A popup notification appears the first time you enter each. SSH sessions do not support automatic reconnection at this time, and the AI Assistant is in conversational mode without Agent tool-calling capabilities.
+</Warning>
+
+## System architecture
+
+DigitalLab uses an Electron + Python hybrid architecture: the Electron main process handles window management and IPC communication, and the Python subprocess handles monitoring collection, hardware detection, NAS SSH, and AI features. The two communicate via a JSON Lines protocol over stdin/stdout. For detailed architectural information, see [System architecture overview](/en/digitallab/architecture/overview).
+
+## Get DigitalLab
+
+- Microsoft Store (official installation and update channel from v1.6.1 onward): [https://apps.microsoft.com/detail/9n0rtlx1bcp5](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
+- GitHub repository (source code, documentation, and collaboration): [https://github.com/ZWWF0906/Digital-Lab](https://github.com/ZWWF0906/Digital-Lab)
+- GitHub Releases (standalone installer for v1.6.0 and earlier): [https://github.com/ZWWF0906/Digital-Lab/releases](https://github.com/ZWWF0906/Digital-Lab/releases)
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Features" icon="list" href="/en/digitallab/getting-started/features">
+    Learn the detailed capabilities of each panel and version evolution
+  </Card>
+
+  <Card title="Installation guide" icon="download" href="/en/digitallab/getting-started/installation">
+    Download and install DigitalLab
+  </Card>
+
+  <Card title="Quick start" icon="bolt" href="/en/quickstart">
+    Complete guide from installation to first use
+  </Card>
+</CardGroup>

@@ -1,0 +1,76 @@
+---
+title: "製品概要"
+description: "DigitalLab は、個人向けデバイス管理、データ感知、AI 拡張を実現するローカル優先のデスクトップアプリケーションです。"
+sidebarTitle: "製品概要"
+---
+
+DigitalLab は**個人向けデジタルラボプラットフォーム**で、個人のデバイス管理、データ感知、AI 拡張を実現するデスクトップアプリケーションです。ローカル優先、モジュール式、拡張可能であり、あなたのパソコンをプログラミング可能で感知可能、対話可能なデジタルワークスペースに変えます。
+
+<Info>
+  **配布チャネルの変更**: DigitalLab v1.6.0 は GitHub Releases で単体インストーラーを提供する最後のバージョンです。v1.6.1 以降、正式版は [Microsoft Store](https://apps.microsoft.com/detail/9n0rtlx1bcp5) でのみ配布され、GitHub は引き続きソースコード、ドキュメント、コラボレーションの場として運用されます。
+</Info>
+
+## コア設計原則
+
+DigitalLab の設計は、以下の4つの原則に基づいています。
+
+- **すべてのデータは system_state に入り、すべての UI は system_state のみを消費する**: 単一のデータソースにより、フロントエンドとバックエンドを分離
+- **ローカル優先、モジュール式、拡張可能**: コア機能にネットワークは不要で、パネルは必要に応じて読み込み
+- **Electron コア通信は HTTP に依存しない**: JSON Lines IPC プロトコルを採用し、ネットワークオーバーヘッドはゼロ。同時にオプションの Web Dashboard サービスも提供
+- **Privacy First**: デバイスデータは既定でローカルに保存され、機密設定はユーザーディレクトリに保存。AI および NAS の認証情報は、現在の Windows ユーザーの DPAPI 暗号文として保存され、リモート AI エンドポイントは HTTPS を要求します（詳しくは [機密情報の取り扱い](/ja/digitallab/privacy/sensitive-information) を参照）
+
+## 主な機能パネル
+
+DigitalLab は5つのモジュール式パネルで構成されています。
+
+<CardGroup cols={2}>
+  <Card title="ダッシュボードと監視" icon="gauge" href="/ja/digitallab/user-guide/dashboard">
+    CPU、メモリ、ディスク、ネットワーク速度のリアルタイム監視、性能履歴グラフ、プロセス一覧と NAS ステータスカード
+  </Card>
+
+  <Card title="デバイスセンター" icon="microchip" href="/ja/digitallab/user-guide/device-center">
+    CPU、GPU、メモリ、ディスク、ディスプレイ、ネットワークアダプターなど、本機ハードウェア情報の一覧表示
+  </Card>
+
+  <Card title="NAS と SSH ターミナル" icon="terminal" href="/ja/digitallab/user-guide/nas-ssh-terminal">
+    xterm.js ベースの SSH ターミナル。独立ウィンドウで信頼済み NAS デバイスにリモート接続
+  </Card>
+
+  <Card title="AI アシスタント" icon="bot" href="/ja/digitallab/user-guide/ai-assistant">
+    Ollama ローカルモデルまたは OpenAI 互換 API に対応。マルチターン対話、システム状態コンテキストの自動注入
+  </Card>
+
+  <Card title="設定と偏好" icon="gear" href="/ja/digitallab/user-guide/settings">
+    ログレベル、監視しきい値、NAS デバイス管理、AI プロバイダー切り替え、テーマとハードウェアアクセラレーションの設定
+  </Card>
+</CardGroup>
+
+<Warning>
+  SSH ターミナルと AI アシスタントは現在**テスト段階**です。初回アクセス時にポップアップで通知されます。SSH セッションは自動再接続に未対応です。AI アシスタントは現在対話モードであり、Agent のツール呼び出し機能は含まれません。
+</Warning>
+
+## システムアーキテクチャ
+
+DigitalLab は Electron + Python のハイブリッドアーキテクチャを採用しています。Electron メインプロセスがウィンドウ管理と IPC 通信を担当し、Python サブプロセスが監視収集、ハードウェア検出、NAS SSH、AI 機能を担当します。両者は stdin/stdout 上の JSON Lines プロトコルで通信します。詳細なアーキテクチャの説明は [システムアーキテクチャ概要](/ja/digitallab/architecture/overview) を参照してください。
+
+## DigitalLab の入手
+
+- Microsoft Store（v1.6.1 以降の正式インストールおよび更新チャネル）: [https://apps.microsoft.com/detail/9n0rtlx1bcp5](https://apps.microsoft.com/detail/9n0rtlx1bcp5)
+- GitHub リポジトリ（ソースコード、ドキュメント、コラボレーション）: [https://github.com/ZWWF0906/Digital-Lab](https://github.com/ZWWF0906/Digital-Lab)
+- GitHub Releases（v1.6.0 およびそれ以前のバージョンの単体インストーラー）: [https://github.com/ZWWF0906/Digital-Lab/releases](https://github.com/ZWWF0906/Digital-Lab/releases)
+
+## 次のステップ
+
+<CardGroup cols={3}>
+  <Card title="機能特性" icon="list" href="/ja/digitallab/getting-started/features">
+    各パネルの詳細な機能とバージョンの変遷を確認
+  </Card>
+
+  <Card title="インストールガイド" icon="download" href="/ja/digitallab/getting-started/installation">
+    DigitalLab をダウンロードしてインストール
+  </Card>
+
+  <Card title="クイックスタート" icon="bolt" href="/ja/quickstart">
+    インストールから初回利用までの完全ガイド
+  </Card>
+</CardGroup>

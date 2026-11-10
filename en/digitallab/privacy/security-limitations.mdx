@@ -1,0 +1,56 @@
+---
+title: "Known security limitations"
+description: "A summary of confirmed storage, transport, logging, and functional security and privacy limitations in the current version of DigitalLab."
+---
+
+This page summarizes the security and privacy limitations confirmed in v1.6.0. Every entry is supported by the v1.6.0 code, PRIVACY.md, README, or CHANGELOG. No speculative threats or CVEs have been added.
+
+<Info>
+  Three limitations from early documentation are no longer applicable in v1.6.0: credentials are now stored as DPAPI ciphertext; AI endpoints restrict HTTP according to the [transport policy](/en/digitallab/privacy/sensitive-information#ai-endpoint-transport-policy); and the renderer process receives only a "configured" status and mask, not plaintext.
+</Info>
+
+## Storage and credentials
+
+| No. | Limitation | Impact | Mitigation | Source |
+| --- | --- | --- | --- | --- |
+| 1 | Credential encryption relies on Windows DPAPI current-user scope | Other programs running under the same Windows user can decrypt; decryption fails after switching user or machine, requiring re-entry | Protect your Windows account; do not save credentials under a shared account | Code (`core/secret_store.py`) |
+| 2 | Only API Key, NAS password, and `auth_token` are encrypted | NAS name, host address, port, username, and AI service address and model name are readable in `user_config.json` | Do not share configuration files under `%APPDATA%\DigitalLab\` | Code / PRIVACY.md |
+| 3 | Uninstalling the app does not automatically delete `%APPDATA%` data | Configuration, logs, chat history, memory, and other personal data may remain on the machine | Manually delete `%APPDATA%\DigitalLab\` and `%APPDATA%\digital-lab\` | PRIVACY.md |
+
+## Transport
+
+| No. | Limitation | Impact | Mitigation | Source |
+| --- | --- | --- | --- | --- |
+| 4 | Private-network or Tailscale HTTP endpoints authorized by `ai.allow_insecure_http` are not encrypted | Request content is transmitted in plaintext over that network link, and the cloud model API Key is also transmitted in plaintext in the request header | Authorize only local model services on trusted networks; prefer HTTPS | Code (`core/net_policy.py`) |
+| 5 | `ai.allow_insecure_http` and `ai.ca_bundle` have no Settings UI | Configuration must be edited manually; misconfiguration causes requests to be denied or to fail | Back up the configuration before changing it; review the confirmation dialog when saving | Code (`panels/settings.js`) |
+| 6 | NAS connections do not require the target to be on the local network | SSH traffic travels over the public internet when a public address is entered | Connect only to trusted hosts; verify the host fingerprint on first connection | Code (`core/ssh_trust.py`) |
+
+## Logging and local records
+
+| No. | Limitation | Impact | Mitigation | Source |
+| --- | --- | --- | --- | --- |
+| 7 | The logging system does not apply general-purpose field redaction | Monitoring logs may contain NAS device names and host addresses; UI log exception messages, stacks, and paths (which may contain the Windows username) are written as-is | Review content before sharing logs; delete log files as needed. See [Logs](/en/digitallab/privacy/data-storage#logs) | Code (`main.js`, `core/logger.py`) |
+| 8 | Turning off "Save chat history" does not delete existing records | History files remain on the machine | Clear all history in Settings, or delete the file manually | PRIVACY.md |
+| 9 | Turning off "Save chat history" does not stop AI requests | The current message and existing session content are still sent with the request | Do not enter into the AI assistant content you do not want sent | PRIVACY.md |
+| 10 | Disabling AI memory does not delete existing memory files | `ai_memory.jsonl` remains on the machine | Delete or clear memory in Settings; if you changed the directory, also delete files in the old directory | PRIVACY.md |
+| 11 | The current UI does not provide per-message chat history deletion | Individual records cannot be deleted one by one | Clear all history at once; a backend endpoint for this already exists | Code / PRIVACY.md |
+
+## Functionality
+
+| No. | Limitation | Impact | Mitigation | Source |
+| --- | --- | --- | --- | --- |
+| 12 | SSH sessions do not yet support automatic reconnection | After a disconnection, the session must be rebuilt manually; the prompt text when a session expires says "reconnecting", but it does not actually reconnect automatically | Reconnect manually | Code / README / CHANGELOG |
+| 13 | SSH terminal is in testing | Functional stability may be insufficient | A dialog is shown on first entry | README |
+| 14 | AI Assistant is in testing | Functional stability may be insufficient; only chat is supported, Agent tool calling is not included | A dialog is shown on first entry | README / CHANGELOG |
+| 15 | NAS monitoring supports only Linux-based NAS (via SSH commands) | NAS on other platforms cannot use the monitoring feature | None | CHANGELOG |
+
+<Danger>
+  Please keep your personal information safe. Do not easily disclose sensitive information such as API Keys and NAS passwords to others.
+</Danger>
+
+## How to report issues
+
+If you discover a new privacy or security issue, please contact the project team through the following channels:
+
+- GitHub Issues: <a href="https://github.com/ZWWF0906/Digital-Lab/issues">[https://github.com/ZWWF0906/Digital-Lab/issues](https://github.com/ZWWF0906/Digital-Lab/issues)</a>
+- Email: <a href="mailto:ZWWF0906@outlook.com">[ZWWF0906@outlook.com](mailto:ZWWF0906@outlook.com)</a>

@@ -1,0 +1,100 @@
+---
+title: "Data processing and storage"
+description: "Storage locations for hardware, performance and NAS data collected by DigitalLab, log contents, and data deletion methods."
+---
+
+This page describes the categories of data collected by DigitalLab on the local machine, the directory structure, log contents and deletion methods. Content is based on the v1.6.0 code. Collected data is written to the local user-writable directory by default; the application does not upload these files to a remote server.
+
+## Information collected (hardware and performance)
+
+DigitalLab collects the following information on the local machine, used for dashboard display, local analysis and providing context to the AI assistant:
+
+1. **Local hardware information**: CPU model and frequency, memory capacity and type, GPU model and VRAM, disk model and capacity, monitor specifications, network adapter information, system model and manufacturer.
+2. **System performance data**: CPU usage, memory usage, disk usage, network speed, process list (PID, name, CPU and memory usage).
+3. **NAS device data**: CPU, memory, disk and Docker container status of NAS devices you configured. The application collects this via SSH connection to the host address and port you entered, without restricting the target to the local network; collection results are stored locally.
+
+## Data storage locations
+
+Runtime data is stored in two user directories:
+
+```text
+%APPDATA%\DigitalLab\
+├── config.json                # Runtime public configuration
+├── user_config.json           # Sensitive configuration; credential values are DPAPI ciphertext (dpapi:v1:)
+├── logs\
+│   ├── cache\
+│   │   └── hardware.json      # Hardware info cache
+│   └── monitor\
+│       ├── monitor.db         # Performance snapshot database (SQLite)
+│       ├── daemon.log         # Monitoring log (JSON Lines)
+│       └── daemon.pid         # Monitoring daemon PID
+├── memory\
+│   ├── daily.jsonl            # Daily performance summary
+│   ├── chat_history.jsonl     # AI conversation history (enabled by default; can set a limit or clear)
+│   └── ai_memory.jsonl        # AI long-term memory (off by default; created when enabled)
+├── snapshots\                 # Performance snapshots
+├── reports\                   # Reports
+├── ssh\
+│   └── ssh_trust.json         # SSH host trust store (host public keys and fingerprints; no credentials)
+└── tools\ experiments\ notes\ archive\ interface\   # Reserved directories
+
+%APPDATA%\digital-lab\
+├── config.json                # UI preferences (theme, language, splash animation, onboarding completion state, hardware acceleration)
+├── digital-lab.log            # Electron UI log
+├── digital-lab.log.1 to .3    # UI log rotation files
+└── tmp\                       # Temporary directory for backend Python process (TEMP/TMP)
+```
+
+The program directory (the source root in development mode; after packaging, the directory where `backend.exe` resides, i.e. `resources\` under the installation directory) only stores `launchers.json` (quick launcher configuration). Daily summaries, performance snapshots and reports are all written to `%APPDATA%\DigitalLab\`, not to the program directory.
+
+<Info>
+  **Custom directories**: the AI memory directory can be changed in Settings via the system directory picker (`ai.memory.dir`); the conversation history directory has no UI entry and can only be changed via the configuration item `ai.history.dir`. Both can also be overridden by the environment variables `DIGITAL_LAB_AI_MEMORY_DIR` and `DIGITAL_LAB_CHAT_HISTORY_DIR`, with priority: environment variable, configuration item, default directory. After modification, the selected directory takes effect; when changing the memory directory, old files are copied to the new directory but are not deleted from the old directory.
+
+  `daily.jsonl` is not affected by the above settings and always resides in `%APPDATA%\DigitalLab\memory\`.
+</Info>
+
+## Logs
+
+DigitalLab records runtime logs on the local machine for troubleshooting and performance analysis:
+
+| File | Writer | Contents |
+| --- | --- | --- |
+| `%APPDATA%\DigitalLab\logs\monitor\daemon.log` | Python backend | JSON Lines format, recording timestamp, level, event message and related fields such as process PID, collection count, metric thresholds, NAS device name and host address |
+| `%APPDATA%\digital-lab\digital-lab.log` | Electron main process | Window lifecycle, page load failures, uncaught main process exception messages and stacks, I/O error summaries, backend temporary directory path, backend process exit code, and extracted labels and length counts of backend error output (original text omitted) |
+| `%APPDATA%\DigitalLab\logs\cache\hardware.json` | Python backend | Hardware info cache, avoiding repeated collection on every start (not a log, but also located under `logs\`) |
+
+UI log files are limited to 5 MB each; after exceeding the limit, they rotate and `digital-lab.log.1` through `.3` are retained. If an oversized leftover file is found at startup, only the last 256 KB is kept.
+
+Privacy boundaries of the logs:
+
+- Logs do not contain AI conversation content or AI request context; they are written only to the local machine, not uploaded to any server, and not used for user behavior analysis.
+- The logging system does not apply general-purpose field redaction. Monitoring logs may contain NAS device names and host addresses; exception messages, stacks and paths in UI logs (which may contain the Windows username) are written as-is.
+- The original text of backend (Python) error output (stderr) is not written to the UI log. For each segment of error output, the UI log records a single line `Python stderr: kind=<label> bytes=<length>`:
+  - The label is taken from the text before the first colon in that segment, keeping only English letters, underscores and spaces, up to 40 characters, so it may contain a few English words from the beginning of the error output.
+  - The length is the string length after trimming leading and trailing whitespace (`text.length`, counted in UTF-16 code units). Although the field name is `bytes`, it is not the actual byte count.
+  - When the backend process exits, only the exit code is recorded. The reserved "stderr tail" buffer in the code is never written, so tail content of error output is not recorded.
+- When an AI request fails, the error summary returned to the UI removes the URL and replaces key/value patterns such as `authorization`, `bearer`, `api_key`, `password`, `token` with `<redacted>`, truncating to 160 characters. This is redaction for the error message, not for the logging system.
+
+Delete the `%APPDATA%\DigitalLab\logs\` directory and `digital-lab.log*` files under `%APPDATA%\digital-lab\` to clear logs. Please review the contents before sharing logs.
+
+## Data deletion methods
+
+### Delete via the application
+
+- **Conversation history**: Settings → AI Assistant → Chat History. You can turn off saving (stop writing new records), set a retention limit (oldest entries are trimmed beyond it), or clear all history at once (not recoverable). The current UI does not provide a single-entry deletion entry (the backend has a corresponding interface).
+- **AI memory**: Settings → AI Assistant → AI Memory. You can turn off memory, view entries, delete them one by one, or clear all; there is also "Clean duplicates" to merge duplicate entries (only the earliest one of the same content is kept). If you have changed the memory directory, delete the files in the old directory as well.
+- **Credentials**: the Settings UI can clear saved API Keys and NAS passwords.
+- **Other configuration** (AI provider, monitoring thresholds, device list, theme, language, etc.): can only be modified item by item, or delete the data directory manually as described below.
+
+### Delete manually
+
+- `%APPDATA%\DigitalLab\`: public and sensitive configuration, monitoring logs and snapshot database, hardware cache, daily summaries, performance snapshots, reports, SSH host trust store, AI conversation history, AI memory
+- `%APPDATA%\digital-lab\`: UI preferences, UI logs and temporary directory
+- `launchers.json` in the program directory: quick launcher configuration
+- If you have changed the conversation history or AI memory directory, delete the files in the corresponding directories as well
+
+Uninstalling the application does not automatically delete the two `%APPDATA%` directories above; manual deletion is required.
+
+<Warning>
+  The uninstall cleanup behavior of `launchers.json` has not been verified: it is written to the program directory at runtime, not distributed by the installer, and whether the uninstaller removes it has not been tested in practice. After uninstalling, please check the original installation directory and remove any leftovers manually. In addition, whether the program directory is writable under per-machine install or Microsoft Store install has not been verified, so whether quick launcher configuration can be saved normally is also untested.
+</Warning>

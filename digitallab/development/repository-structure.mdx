@@ -13,9 +13,19 @@ sidebarTitle: "仓库结构"
 ```text
 DigitalLab/
 ├── main.js                 # Electron 主进程（窗口、托盘、IPC、Python 子进程管理）
+├── main.py                 # Python 后端入口（命令行解析、HTTP 服务与进程管理）
 ├── preload.js              # IPC 桥接（暴露 window.digitalLab 安全接口）
+├── renderer.js             # Dashboard 渲染进程外壳（面板路由、保活、i18n）
+├── renderer-terminal.js    # 独立终端窗口渲染进程（xterm 集成）
+├── preload-terminal.js     # 终端窗口 IPC 桥接（暴露 window.terminalAPI）
 ├── dashboard.html          # 主界面 HTML
+├── terminal.html           # 独立终端窗口 HTML（xterm 集成）
 ├── styles.css              # 全局样式（Emerald 主题体系：深色默认 / 浅色可选）
+├── onboarding.js           # 首次启动引导（三步向导）
+├── splash.js               # 启动开屏动画与自检状态驱动
+├── theme-init.js           # 主题初始化（首帧前应用深色/浅色）
+├── lang-init.js            # 语言初始化（首帧前应用配置语言）
+├── boot-text.js            # 开屏覆盖层静态文案替换
 ├── package.json            # Node 项目配置与 build 配置
 ├── requirements.txt        # Python 依赖
 ├── backend.spec            # PyInstaller 打包规范
@@ -29,6 +39,7 @@ DigitalLab/
 ├── LICENSE                 # 许可证（ISC）
 ├── config.json             # 公开配置
 ├── config.schema.json      # 配置校验规则
+├── .gitignore              # Git 忽略规则
 ├── i18n.js                 # 主进程多语言工具
 ├── locales/                # 前端与主进程共用的多语言词典
 │   ├── index.js            # 语言清单与默认语言解析
@@ -36,8 +47,11 @@ DigitalLab/
 │   ├── en-US.js            # 英文词条
 │   └── ja-JP.js            # 日语词条
 ├── build/                  # 构建资源
-│   ├── icons/              # 应用图标与托盘图标
-│   └── fonts/              # 字体文件
+│   ├── icons/              # 应用图标与托盘图标（icon.ico、StoreLogo.png 等）
+│   └── fonts/              # 字体文件（Inter、JetBrains Mono、Orbitron）
+├── scripts/                # 构建脚本
+│   ├── build-backend.ps1   # PyInstaller 后端打包脚本（含 SHA256 校验）
+│   └── build-windows.ps1   # Windows 完整构建脚本（校验版本与资源清单）
 ├── core/                   # Python 后端模块
 │   ├── __init__.py         # 包暴露接口
 │   ├── config.py           # 配置加载与双层存储
@@ -50,6 +64,11 @@ DigitalLab/
 │   ├── ai_memory.py        # AI 本地记忆（JSONL 存储）
 │   ├── chat_store.py       # AI 对话历史存储（JSONL 存储）
 │   ├── nas_monitor.py      # NAS 远程监控（SSH）
+│   ├── agent_tools.py      # Agent 只读工具基础设施（注册、校验、调度）
+│   ├── secret_store.py     # Windows DPAPI 凭据保护（SSH/AI 凭据加密存储）
+│   ├── net_policy.py       # AI 网络端点安全策略（回环/私有网段/公网校验）
+│   ├── path_policy.py      # 用户可配置路径的本地安全策略（绝对路径、防穿越）
+│   ├── ssh_trust.py        # SSH 主机身份信任库（指纹校验与信任归档）
 │   ├── logger.py           # 日志系统
 │   ├── system_state.py     # 全局状态管理
 │   ├── event_bus.py        # 事件总线
@@ -58,13 +77,15 @@ DigitalLab/
 │   ├── renderer.py         # CLI 渲染器
 │   ├── reporter.py         # 图表生成
 │   ├── launcher.py         # 快捷启动器
-│   └── daemon.py           # 守护进程管理
+│   ├── daemon.py           # 守护进程管理
+│   └── test_hook_policy.js # 测试钩子启用策略（生产安全边界）
 └── panels/                 # 前端面板（渲染进程按需加载）
     ├── index.js            # 面板注册表
     ├── dashboard.js        # 仪表盘
     ├── device-center.js    # 设备中心
     ├── ai-assistant.js     # AI 助手
-    ├── terminal.js         # SSH 终端
+    ├── terminal.js         # SSH 终端面板（列表 + 打开独立窗口）
+    ├── safe-dom.js         # 渲染进程安全输出工具（HTML/属性/URL 上下文转义）
     └── settings.js         # 设置面板
 ```
 
@@ -75,14 +96,34 @@ DigitalLab/
 | `i18n.js` | 主进程侧的多语言 `t()` 实现，与渲染进程共用 `locales/` 下的词典 |
 | `locales/` | 含 `index.js`、`zh-CN.js`、`en-US.js`、`ja-JP.js`，提供三语言支持 |
 | `build/fonts/` | 构建时打入安装包的字体资源目录 |
-| `build/icons/` | 应用图标（`icon.ico`）与托盘图标（`icon_tray.png`） |
+| `build/icons/` | 应用图标（`icon.ico`、`icon.png`、`icon_512.png`）与托盘图标（`icon_tray.png`）及 Microsoft Store 各尺寸 Logo |
 | `backend.spec` | PyInstaller 规范文件，定义如何将 Python 后端打包为 `backend.exe` |
 | `core/__init__.py` | Python 包入口，暴露 `Config`、`get_config` 等符号 |
 | `core/chat_store.py` | AI 对话历史的 JSONL 存储与加载（默认开启，保留 200 条） |
 | `core/config_validator.py` | 基于 schema 的配置项校验与默认值补全 |
 | `core/ai_memory.py` | AI 长期记忆的 JSONL 存储（默认关闭），含 `id`、`tags`、`source` 字段 |
+| `core/agent_tools.py` | Agent 只读工具基础设施：注册发现、JSON Schema 参数校验、执行调度、数据范围声明 |
+| `core/secret_store.py` | Windows DPAPI 凭据加密保护；存储格式 `dpapi:v1:<base64>`，拒绝明文回退 |
+| `core/net_policy.py` | AI 网络端点安全策略：校验回环、私有网段、公网 IP、TLS 要求，纯函数无网络请求 |
+| `core/path_policy.py` | 用户可配置路径安全策略：拒绝 UNC、相对路径、点段穿越，解析符号链接后再校验 |
+| `core/ssh_trust.py` | SSH 主机身份信任库：保存服务端公钥指纹，未知主机先握手再确认，变化即拒绝 |
+| `core/test_hook_policy.js` | 测试钩子启用策略：仅非打包环境 + 显式标志才允许启用，生产构建强制关闭 |
+| `main.py` | Python 后端入口：参数解析、Python 版本检查、Windows 控制台配置、模块导入 |
+| `renderer.js` | Dashboard 渲染进程外壳：面板路由、保活缓存（终端面板 detach/attach）、i18n 集成 |
+| `renderer-terminal.js` | 独立终端窗口渲染进程：xterm.js 集成、尺寸自适应、输入/输出事件处理 |
+| `preload-terminal.js` | 终端窗口最小 IPC 桥接：暴露 `terminalAPI`（attach / input / resize / close） |
+| `terminal.html` | 独立终端窗口 HTML，含 CSP 策略与 xterm.css；加载 `renderer-terminal.js` |
+| `onboarding.js` | 首次启动引导：语言选择、NAS 设备配置、连接测试（三步向导） |
+| `splash.js` | 启动开屏动画：真实状态驱动、固定节奏点亮、超时兜底、淡出完成事件 |
+| `theme-init.js` | 主题初始化脚本：首帧前读取 `config.json` 并应用深色/浅色，回写 localStorage |
+| `lang-init.js` | 语言初始化脚本：首帧前按 `config.json` → localStorage → 系统语言优先级设定 |
+| `boot-text.js` | 开屏覆盖层静态文案替换：解析期同步完成，依赖 `data-i18n` 属性 |
+| `panels/safe-dom.js` | 渲染进程安全输出：区分 HTML 文本、属性、URL 上下文，拒绝 `javascript:` 等危险协议 |
+| `scripts/build-backend.ps1` | PyInstaller 后端打包：调用 `backend.spec`，校验 `backend.exe` 存在性与 SHA256 |
+| `scripts/build-windows.ps1` | Windows 完整构建：校验 `package.json` 版本号、资源清单，先打包后端再构建 Electron |
 | `LICENSE` | ISC 许可证 |
 | `PRIVACY.md` | 隐私政策，含简体中文、英文、日语三个版本 |
+| `.gitignore` | Git 忽略规则 |
 
 ## 模块关联
 

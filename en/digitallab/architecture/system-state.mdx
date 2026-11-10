@@ -1,0 +1,80 @@
+---
+title: "System state and event management"
+description: "How system_state serves as the single source of truth, and how event_bus and collector implement dual-thread data collection."
+sidebarTitle: "System state and events"
+---
+
+DigitalLab's architectural principle is "all data goes into `system_state`, all UI only consumes `system_state`". This page explains how `system_state`, `event_bus`, and `collector` work together to realize this principle.
+
+## system_state: the global state hub
+
+`core/system_state.py` implements a thread-safe state dictionary:
+
+- Internally uses the `_system_state` dictionary and a `_lock` thread lock.
+- Namespace-style storage, with top-level keys such as `monitor`, `hardware`, and `nas`.
+- Values are stored in the format `{ "value": x, "ts": t }`. `_upsert_with_ts` checks the timestamp on write and keeps only the newer value, preventing old data from overwriting new data.
+
+### Key APIs
+
+| Method | Description |
+| --- | --- |
+| `__getitem__(key)` | Get or create a namespace |
+| `__setitem__(key, value)` | Directly set a namespace value |
+| `update(key, sub_key, value)` | Update a sub-key within a namespace |
+| `delete(key, sub_key)` | Delete a sub-key within a namespace |
+| `snapshot()` | Return a deep-copy dictionary of the current state |
+
+### \_format_state construction
+
+`_format_state()` in `main.py` is called once per second by the main loop to extract and format data from `system_state`:
+
+1. Take `system_state.snapshot()`.
+2. Read `cpu`, `memory`, and `disk` from the `monitor` namespace. These values may be `{"value": x, "ts": t}` dictionaries or plain numbers, so `isinstance` is used to check and unpack them.
+3. For the process list, take the first 15 items from `monitor.processes`.
+4. For hardware data, take the `hardware` namespace and extract summary fields for CPU, GPU, memory, disk, and system info.
+5. NAS data is taken directly from the `nas` namespace.
+6. Alerts take the last 5 items from `monitor.alerts_history`.
+
+The resulting frame structure matches the state-frame example on /en/digitallab/architecture/jsonl-ipc.
+
+## event_bus: event dispatch
+
+`core/event_bus.py` provides a lightweight event bus:
+
+- `subscribe(callback)`: Register a callback function.
+- `emit(module, key, value)`: Send a single event, shaped as `{ module, key, value, ts }`.
+- `emit_batch(module, updates)`: Batch-send multiple updates for the same module, sharing one `ts`.
+
+Callbacks execute synchronously in the caller's thread. `_bus` holds a copy of the subscriber list to avoid modification during iteration.
+
+## collector: dual-thread collection
+
+`core/collector.py` maintains two daemon threads:
+
+### Fast thread (\_run_fast)
+
+- Initializes the monitoring database.
+- Runs `collect_and_store()` every 1 second, collecting CPU, memory, and disk utilization.
+- On successful collection, calls `check_alerts()` to judge whether an alert should be raised based on thresholds and cooldown.
+- Generated alerts are written to `system_state["monitor"]["alerts_history"]`, keeping the most recent 100.
+
+### Slow thread (\_run_slow)
+
+- Ticks every 3 seconds.
+- Calls `daily_aggregate()` for daily performance summaries.
+- Every 10 ticks (about 30 seconds) calls `refresh_hardware_live()` to refresh volatile hardware info such as temperature and frequency.
+
+### Start and stop
+
+- `start_collector(interval=3.0)`: Start both threads if they are not already running.
+- `stop_collector()`: Set the stop event and wait for the threads to join, with a 5-second timeout.
+
+## Alert deduplication
+
+Alerts in `core/monitor.py` use a `seq` serial number for deduplication:
+
+- `alert_state["seq"]` increments within the process; +1 for each alert generated.
+- Resets to zero on restart. The main process synchronously resets `lastSeenSeq` at the start of `startPython()`, ensuring new-process alerts are not missed.
+- The main process only handles alerts with `seq > lastSeenSeq`, and pops a Windows system notification.
+
+The minimum alert duration threshold is 30 seconds (`ALERT_MIN_DURATION = 30`). An alert is only officially produced after the threshold is exceeded continuously for 30 seconds, preventing instantaneous jitter from triggering notifications.
