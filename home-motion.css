@@ -1,0 +1,197 @@
+/*
+ * ZWWF Labs homepage motion (index, en/index, ja/index).
+ *
+ * Every rule is scoped to .zl-home, so no other page is affected.
+ * Content never depends on JavaScript: .zl-pending is added only by the
+ * HomeMotion component at the end of each homepage, only to elements that
+ * are still below the fold, and only when reduced motion is not requested.
+ */
+
+/* ---------- Ambient glow (hero and DigitalLab section) ---------- */
+
+.zl-home .zl-glow-host {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+@supports (overflow: clip) {
+  .zl-home .zl-glow-host {
+    overflow: clip;
+  }
+}
+
+.zl-home .zl-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.zl-home .zl-glow-blob {
+  position: absolute;
+  left: 72%;
+  top: 30%;
+  width: 40rem;
+  height: 40rem;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(37, 99, 235, 0.13), rgba(37, 99, 235, 0.05) 55%, rgba(37, 99, 235, 0) 100%);
+  opacity: 0.6;
+  transform: translate3d(-50%, -50%, 0) translate3d(var(--zl-dx, 0px), var(--zl-dy, 0px), 0);
+  transition: transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
+}
+
+/* Secondary glow: invisible at rest, appears only under a mouse pointer. */
+.zl-home .zl-glow-soft .zl-glow-blob {
+  left: 20%;
+  top: 10%;
+  opacity: 0;
+}
+
+.zl-home .zl-glow-host.zl-glow-active .zl-glow-blob {
+  opacity: 1;
+}
+
+html.dark .zl-home .zl-glow-blob {
+  background: radial-gradient(closest-side, rgba(96, 165, 250, 0.14), rgba(96, 165, 250, 0.05) 55%, rgba(96, 165, 250, 0) 100%);
+}
+
+@media (max-width: 639px) {
+  .zl-home .zl-glow-blob {
+    left: 80%;
+    top: 22%;
+    width: 26rem;
+    height: 26rem;
+  }
+}
+
+/* ---------- Scroll reveal ---------- */
+
+.zl-home .zl-reveal {
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.zl-home .zl-reveal.zl-pending {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+/* Keyboard focus inside a hidden block shows it immediately. */
+.zl-home .zl-reveal.zl-pending:focus-within {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Hover feedback ---------- */
+
+.zl-home .zl-btn {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.zl-home .zl-cards .card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.zl-home .zl-surface {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.zl-home .zl-reveal.zl-surface {
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Text links: the existing hover underline fades in instead of snapping. */
+.zl-home .zl-links a {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.zl-home .zl-links a:hover,
+.zl-home .zl-links a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.zl-home footer a {
+  transition: color 0.2s ease;
+}
+
+/* Movement and shadows only for a real mouse or trackpad, never on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .zl-home .zl-btn:hover {
+    transform: translate3d(0, -1px, 0);
+    box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.35);
+  }
+
+  .zl-home .zl-btn:active {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .zl-home .zl-cards .card:hover {
+    transform: translate3d(0, -2px, 0);
+    box-shadow: 0 12px 28px -16px rgba(15, 23, 42, 0.3);
+  }
+
+  .zl-home .zl-surface:hover {
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 12px 28px -18px rgba(37, 99, 235, 0.3);
+  }
+
+  html.dark .zl-home .zl-btn:hover {
+    box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+  }
+
+  html.dark .zl-home .zl-cards .card:hover {
+    box-shadow: 0 12px 28px -16px rgba(0, 0, 0, 0.65);
+  }
+
+  html.dark .zl-home .zl-surface:hover {
+    border-color: rgba(96, 165, 250, 0.35);
+    box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ---------- Focus ---------- */
+
+.zl-home a:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+html.dark .zl-home a:focus-visible {
+  outline-color: #60A5FA;
+}
+
+/* ---------- Reduced motion and print ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .zl-home .zl-reveal,
+  .zl-home .zl-reveal.zl-pending {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .zl-home .zl-glow-blob {
+    transform: translate3d(-50%, -50%, 0) !important;
+    transition: none !important;
+  }
+
+  .zl-home .zl-btn:hover,
+  .zl-home .zl-cards .card:hover {
+    transform: none !important;
+  }
+}
+
+@media print {
+  .zl-home .zl-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .zl-home .zl-glow {
+    display: none;
+  }
+}

@@ -5,42 +5,52 @@ description: "ZWWF Labs is an independent software and technology studio. This i
 mode: "custom"
 ---
 
-<div className="w-full">
-  <section className="max-w-5xl mx-auto px-6 sm:px-8 pt-20 sm:pt-28 pb-16 sm:pb-20">
-    <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-6">
-      Independent Software & Technology Studio
-    </p>
-
-    <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-5">
-      ZWWF Labs
-    </h1>
-
-    <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-300 mb-8">
-      Building, Exploring, Engineering.
-    </p>
-
-    <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
-      Building practical software, exploring engineering ideas, and documenting the process. This site brings together projects and documentation from ZWWF Labs, currently centered on the DigitalLab docs.
-    </p>
-
-    <div className="flex flex-wrap items-center gap-3">
-      <a href="/en/digitallab/getting-started/overview" className="inline-block rounded-lg bg-primary hover:bg-primary-dark px-5 py-3 text-sm sm:text-base font-semibold text-white no-underline">
-        Read DigitalLab docs
-      </a>
-
-      <a href="/en/digitallab/getting-started/installation" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-5 py-3 text-sm sm:text-base font-medium text-zinc-800 dark:text-zinc-200 no-underline">
-        Install DigitalLab
-      </a>
+<div className="w-full zl-home">
+  <div className="zl-glow-host">
+    <div aria-hidden="true" className="zl-glow">
+      <div className="zl-glow-blob" />
     </div>
 
-    <p className="font-mono text-xs sm:text-sm tracking-wide text-zinc-500 mt-12">
-      Developer · Learner · Builder
-    </p>
-  </section>
+    <section className="max-w-5xl mx-auto px-6 sm:px-8 pt-20 sm:pt-28 pb-16 sm:pb-20">
+      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-6">
+        Independent Software & Technology Studio
+      </p>
 
-  <section id="digitallab" className="border-t border-zinc-200 dark:border-zinc-800">
+      <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-5">
+        ZWWF Labs
+      </h1>
+
+      <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-300 mb-8">
+        Building, Exploring, Engineering.
+      </p>
+
+      <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
+        Building practical software, exploring engineering ideas, and documenting the process. This site brings together projects and documentation from ZWWF Labs, currently centered on the DigitalLab docs.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <a href="/en/digitallab/getting-started/overview" className="zl-btn inline-block rounded-lg bg-primary hover:bg-primary-dark px-5 py-3 text-sm sm:text-base font-semibold text-white no-underline">
+          Read DigitalLab docs
+        </a>
+
+        <a href="/en/digitallab/getting-started/installation" className="zl-btn inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-5 py-3 text-sm sm:text-base font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+          Install DigitalLab
+        </a>
+      </div>
+
+      <p className="font-mono text-xs sm:text-sm tracking-wide text-zinc-500 mt-12">
+        Developer · Learner · Builder
+      </p>
+    </section>
+  </div>
+
+  <section id="digitallab" className="zl-glow-host border-t border-zinc-200 dark:border-zinc-800">
+    <div aria-hidden="true" className="zl-glow zl-glow-soft">
+      <div className="zl-glow-blob" />
+    </div>
+
     <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="zl-reveal flex flex-wrap items-center gap-3 mb-4">
         <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light">
           Main project
         </p>
@@ -50,121 +60,125 @@ mode: "custom"
         </span>
       </div>
 
-      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
+      <h2 className="zl-reveal text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
         DigitalLab
       </h2>
 
-      <p className="max-w-3xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
+      <p className="zl-reveal max-w-3xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
         A local-first Windows desktop app for personal device management, system monitoring, and AI-assisted interaction. Built on an Electron + Python architecture, device data is kept locally by default.
       </p>
 
-      <p className="max-w-3xl text-sm sm:text-base leading-relaxed text-zinc-500 dark:text-zinc-400 mb-10">
+      <p className="zl-reveal max-w-3xl text-sm sm:text-base leading-relaxed text-zinc-500 dark:text-zinc-400 mb-10">
         Includes five panels: Dashboard & Monitoring, Device Center, NAS & SSH Terminal, AI Assistant, and Settings. The SSH terminal and AI Assistant are currently in testing: SSH sessions do not yet support automatic reconnection, and the AI Assistant is in chat mode without Agent tool-calling capabilities.
       </p>
 
-      <CardGroup cols={3}>
-        <Card title="Overview" icon="book-open" href="/en/digitallab/getting-started/overview">
-          What DigitalLab is and its design principles
-        </Card>
+      <div className="zl-reveal zl-cards">
+        <CardGroup cols={3}>
+          <Card title="Overview" icon="book-open" href="/en/digitallab/getting-started/overview">
+            What DigitalLab is and its design principles
+          </Card>
 
-        <Card title="Installation" icon="download" href="/en/digitallab/getting-started/installation">
-          Install via Microsoft Store or v1.6.0 installer
-        </Card>
+          <Card title="Installation" icon="download" href="/en/digitallab/getting-started/installation">
+            Install via Microsoft Store or v1.6.0 installer
+          </Card>
 
-        <Card title="Quick start" icon="bolt" href="/en/quickstart">
-          A guide from first launch to daily use
-        </Card>
+          <Card title="Quick start" icon="bolt" href="/en/quickstart">
+            A guide from first launch to daily use
+          </Card>
 
-        <Card title="Features" icon="list" href="/en/digitallab/getting-started/features">
-          Panel-by-panel details and version evolution
-        </Card>
+          <Card title="Features" icon="list" href="/en/digitallab/getting-started/features">
+            Panel-by-panel details and version evolution
+          </Card>
 
-        <Card title="Architecture" icon="sitemap" href="/en/digitallab/architecture/overview">
-          Electron and Python layers, and how they communicate
-        </Card>
+          <Card title="Architecture" icon="sitemap" href="/en/digitallab/architecture/overview">
+            Electron and Python layers, and how they communicate
+          </Card>
 
-        <Card title="Privacy policy" icon="shield-halved" href="/en/digitallab/privacy/privacy-policy">
-          What is and is not collected, and where data goes
-        </Card>
-      </CardGroup>
+          <Card title="Privacy policy" icon="shield-halved" href="/en/digitallab/privacy/privacy-policy">
+            What is and is not collected, and where data goes
+          </Card>
+        </CardGroup>
+      </div>
 
-      <h3 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-100 mt-12 mb-4">
+      <h3 className="zl-reveal text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-100 mt-12 mb-4">
         Distribution channels
       </h3>
 
-      <div className="flex flex-wrap gap-3 mb-6">
-        <a href="https://apps.microsoft.com/detail/9n0rtlx1bcp5" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-zinc-900 hover:bg-zinc-700 dark:bg-zinc-100 dark:hover:bg-zinc-300 px-4 py-2.5 text-sm font-semibold text-white dark:text-zinc-900 no-underline">
+      <div className="zl-reveal flex flex-wrap gap-3 mb-6">
+        <a href="https://apps.microsoft.com/detail/9n0rtlx1bcp5" target="_blank" rel="noopener noreferrer" className="zl-btn inline-block rounded-lg bg-zinc-900 hover:bg-zinc-700 dark:bg-zinc-100 dark:hover:bg-zinc-300 px-4 py-2.5 text-sm font-semibold text-white dark:text-zinc-900 no-underline">
           Microsoft Store
         </a>
 
-        <a href="https://github.com/ZWWF0906/Digital-Lab" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+        <a href="https://github.com/ZWWF0906/Digital-Lab" target="_blank" rel="noopener noreferrer" className="zl-btn inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
           GitHub repository
         </a>
 
-        <a href="https://github.com/ZWWF0906/Digital-Lab/releases" target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
+        <a href="https://github.com/ZWWF0906/Digital-Lab/releases" target="_blank" rel="noopener noreferrer" className="zl-btn inline-block rounded-lg border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 no-underline">
           GitHub Releases
         </a>
       </div>
 
-      <Info>
-        * **v1.6.1 and later**: Official releases are distributed only through the Microsoft Store.
-        * **v1.6.0**: The last version to provide a standalone installer through GitHub Releases. Installers for v1.6.0 and earlier remain available on GitHub Releases.
-        * **GitHub**: Continues to serve as the platform for source code, documentation, issue tracking, and collaboration.
+      <div className="zl-reveal">
+        <Info>
+          * **v1.6.1 and later**: Official releases are distributed only through the Microsoft Store.
+          * **v1.6.0**: The last version to provide a standalone installer through GitHub Releases. Installers for v1.6.0 and earlier remain available on GitHub Releases.
+          * **GitHub**: Continues to serve as the platform for source code, documentation, issue tracking, and collaboration.
 
-        This change does not mean development has ended; DigitalLab continues to be maintained, with subsequent releases distributed through the Microsoft Store.
-      </Info>
+          This change does not mean development has ended; DigitalLab continues to be maintained, with subsequent releases distributed through the Microsoft Store.
+        </Info>
+      </div>
     </div>
   </section>
 
   <section className="border-t border-zinc-200 dark:border-zinc-800">
     <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
-      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+      <p className="zl-reveal font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
         Docs navigation
       </p>
 
-      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-10">
+      <h2 className="zl-reveal text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-10">
         Where to start
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
-        <div className="border-t-2 border-primary pt-5">
+        <div className="zl-reveal border-t-2 border-primary pt-5">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">New users</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">Install the app and finish the initial setup.</p>
 
-          <ul className="space-y-2 text-sm">
+          <ul className="zl-links space-y-2 text-sm">
             <li><a href="/en/digitallab/getting-started/installation" className="text-primary dark:text-primary-light hover:underline">Installation</a></li>
             <li><a href="/en/quickstart" className="text-primary dark:text-primary-light hover:underline">Quick start</a></li>
             <li><a href="/en/digitallab/getting-started/system-requirements" className="text-primary dark:text-primary-light hover:underline">System requirements</a></li>
           </ul>
         </div>
 
-        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+        <div className="zl-reveal border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Existing users</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">Learn panel usage and version changes.</p>
 
-          <ul className="space-y-2 text-sm">
+          <ul className="zl-links space-y-2 text-sm">
             <li><a href="/en/digitallab/getting-started/features" className="text-primary dark:text-primary-light hover:underline">Features</a></li>
             <li><a href="/en/digitallab/user-guide/dashboard" className="text-primary dark:text-primary-light hover:underline">User guide</a></li>
             <li><a href="/en/digitallab/project/changelog" className="text-primary dark:text-primary-light hover:underline">Changelog</a></li>
           </ul>
         </div>
 
-        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+        <div className="zl-reveal border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Developers</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">Understanding the architecture, running from source, and contributing.</p>
 
-          <ul className="space-y-2 text-sm">
+          <ul className="zl-links space-y-2 text-sm">
             <li><a href="/en/digitallab/architecture/overview" className="text-primary dark:text-primary-light hover:underline">Architecture</a></li>
             <li><a href="/en/digitallab/development/environment" className="text-primary dark:text-primary-light hover:underline">Developer guide</a></li>
             <li><a href="/en/digitallab/development/contributing" className="text-primary dark:text-primary-light hover:underline">Contributing</a></li>
           </ul>
         </div>
 
-        <div className="border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
+        <div className="zl-reveal border-t-2 border-zinc-300 dark:border-zinc-700 pt-5">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Privacy & security</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 mb-4">Data storage locations, credential protection, and known limitations.</p>
 
-          <ul className="space-y-2 text-sm">
+          <ul className="zl-links space-y-2 text-sm">
             <li><a href="/en/digitallab/privacy/privacy-policy" className="text-primary dark:text-primary-light hover:underline">Privacy policy</a></li>
             <li><a href="/en/digitallab/privacy/sensitive-information" className="text-primary dark:text-primary-light hover:underline">Sensitive information handling</a></li>
             <li><a href="/en/digitallab/privacy/security-limitations" className="text-primary dark:text-primary-light hover:underline">Known security limitations</a></li>
@@ -176,11 +190,11 @@ mode: "custom"
 
   <section className="border-t border-zinc-200 dark:border-zinc-800">
     <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
-      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+      <p className="zl-reveal font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
         Other projects
       </p>
 
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8">
+      <div className="zl-reveal zl-surface rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">TC-Linux</h2>
 
@@ -198,35 +212,35 @@ mode: "custom"
 
   <section className="border-t border-zinc-200 dark:border-zinc-800">
     <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
-      <p className="font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
+      <p className="zl-reveal font-mono text-xs sm:text-sm tracking-widest uppercase text-primary dark:text-primary-light mb-4">
         About
       </p>
 
-      <p className="max-w-3xl text-xl sm:text-2xl font-medium leading-snug text-zinc-800 dark:text-zinc-200 mb-6">
+      <p className="zl-reveal max-w-3xl text-xl sm:text-2xl font-medium leading-snug text-zinc-800 dark:text-zinc-200 mb-6">
         Build software that is actually useful, learn through engineering practice, and document the process fully, including the parts that did not succeed.
       </p>
 
-      <p className="max-w-3xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
+      <p className="zl-reveal max-w-3xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400 mb-10">
         ZWWF Labs is an independent software and technology studio focused on software engineering, AI, and systems. Projects start from real problems, are tested on real hardware, and documentation is kept up to date as development progresses.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-        <div>
+        <div className="zl-reveal">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">AI Agents & Automation</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">AI assistants and automation tools with clear boundaries and predictable behavior.</p>
         </div>
 
-        <div>
+        <div className="zl-reveal">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Software Engineering</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">Clear architecture, readable code, and designs that hold up to change.</p>
         </div>
 
-        <div>
+        <div className="zl-reveal">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Linux & Systems</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">Work close to the operating system: desktop environments, services, and the layers underneath.</p>
         </div>
 
-        <div>
+        <div className="zl-reveal">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Reliability & Operations</h3>
           <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">Systems that are observable, recoverable, and run smoothly.</p>
         </div>
@@ -247,4 +261,139 @@ mode: "custom"
       </div>
     </div>
   </footer>
+
+  <HomeMotion />
 </div>
+
+export const HomeMotion = () => {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    const root = node && node.closest ? node.closest(".zl-home") : null;
+    if (!root || typeof window.matchMedia !== "function") return undefined;
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const cleanups = [];
+
+    // Scroll reveal: only blocks that start below the fold are hidden, once.
+    if (!reduce.matches && "IntersectionObserver" in window) {
+      const fold = window.innerHeight || document.documentElement.clientHeight;
+      const pending = Array.from(root.querySelectorAll(".zl-reveal")).filter(
+        (el) => el.getBoundingClientRect().top > fold
+      );
+      if (pending.length) {
+        const timers = [];
+        const io = new IntersectionObserver(
+          (entries) => {
+            let step = 0;
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              const el = entry.target;
+              io.unobserve(el);
+              el.style.transitionDelay = Math.min(step, 4) * 70 + "ms";
+              step += 1;
+              el.classList.remove("zl-pending");
+              timers.push(window.setTimeout(() => { el.style.transitionDelay = ""; }, 1100));
+            });
+          },
+          { rootMargin: "0px 0px -48px 0px", threshold: 0 }
+        );
+        pending.forEach((el) => {
+          el.classList.add("zl-pending");
+          io.observe(el);
+        });
+        cleanups.push(() => {
+          io.disconnect();
+          timers.forEach((t) => window.clearTimeout(t));
+          pending.forEach((el) => {
+            el.classList.remove("zl-pending");
+            el.style.transitionDelay = "";
+          });
+        });
+      }
+    }
+
+    // Ambient glow: follows a mouse or pen only, never touch.
+    if (fine.matches) {
+      const hosts = Array.from(root.querySelectorAll(".zl-glow-host"))
+        .map((el) => ({
+          el,
+          layer: el.querySelector(".zl-glow"),
+          blob: el.querySelector(".zl-glow-blob"),
+          active: false,
+          x: 0,
+          y: 0,
+          restX: 0,
+          restY: 0,
+        }))
+        .filter((h) => h.layer && h.blob);
+      let frame = 0;
+      const place = (h) => {
+        const r = h.layer.getBoundingClientRect();
+        h.el.style.setProperty("--zl-dx", (h.x - r.left - h.restX).toFixed(1) + "px");
+        h.el.style.setProperty("--zl-dy", (h.y - r.top - h.restY).toFixed(1) + "px");
+      };
+      const render = () => {
+        frame = 0;
+        hosts.forEach((h) => {
+          if (h.active) place(h);
+        });
+      };
+      const schedule = () => {
+        if (!frame) frame = window.requestAnimationFrame(render);
+      };
+      const onScroll = () => {
+        if (hosts.some((h) => h.active)) schedule();
+      };
+
+      hosts.forEach((h) => {
+        const start = (e) => {
+          h.restX = h.blob.offsetLeft;
+          h.restY = h.blob.offsetTop;
+          h.x = e.clientX;
+          h.y = e.clientY;
+          h.active = true;
+          if (h.layer.classList.contains("zl-glow-soft")) {
+            h.blob.style.transition = "none";
+            place(h);
+            h.blob.getBoundingClientRect();
+            h.blob.style.transition = "";
+          }
+          h.el.classList.add("zl-glow-active");
+        };
+        const onMove = (e) => {
+          if (e.pointerType === "touch" || reduce.matches) return;
+          if (!h.active) start(e);
+          h.x = e.clientX;
+          h.y = e.clientY;
+          schedule();
+        };
+        const onLeave = () => {
+          h.active = false;
+          h.el.classList.remove("zl-glow-active");
+          h.el.style.removeProperty("--zl-dx");
+          h.el.style.removeProperty("--zl-dy");
+        };
+        h.el.addEventListener("pointermove", onMove, { passive: true });
+        h.el.addEventListener("pointerleave", onLeave);
+        cleanups.push(() => {
+          h.el.removeEventListener("pointermove", onMove);
+          h.el.removeEventListener("pointerleave", onLeave);
+          onLeave();
+        });
+      });
+
+      window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+      cleanups.push(() => {
+        window.removeEventListener("scroll", onScroll, { capture: true });
+        if (frame) window.cancelAnimationFrame(frame);
+      });
+    }
+
+    return () => cleanups.forEach((fn) => fn());
+  }, []);
+
+  return <span ref={ref} hidden />;
+};
