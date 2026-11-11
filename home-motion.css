@@ -1,10 +1,8 @@
 /*
- * ZWWF Labs homepage motion (index, en/index, ja/index).
- *
- * Every rule is scoped to .zl-home, so no other page is affected.
- * Content never depends on JavaScript: .zl-pending is added only by the
- * HomeMotion component at the end of each homepage, only to elements that
- * are still below the fold, and only when reduced motion is not requested.
+ * ZWWF Labs 首页动效（index、en/index、ja/index）。
+ * 所有规则限定于 .zl-home，不影响其他页面。
+ * 内容默认可见，home-motion.js 仅在未启用减少动态效果时，
+ * 为初始化时仍在首屏下方的元素添加 .zl-pending。
  */
 
 /* ---------- Ambient glow (hero and DigitalLab section) ---------- */
@@ -77,9 +75,10 @@ html.dark .zl-home .zl-glow-blob {
 }
 
 /* Keyboard focus inside a hidden block shows it immediately. */
-.zl-home .zl-reveal.zl-pending:focus-within {
+.zl-home .zl-reveal:focus-within {
   opacity: 1;
   transform: none;
+  transition: none;
 }
 
 /* ---------- Hover feedback ---------- */
