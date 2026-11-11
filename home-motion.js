@@ -78,90 +78,57 @@
         }
       }
 
-      // 事件驱动的光晕，仅在精细指针且未启用减少动态效果时移动。
-      if (typeof window.requestAnimationFrame === "function") {
-        const hosts = Array.from(root.querySelectorAll(".zl-glow-host"))
-          .map((el) => ({
-            el,
-            layer: el.querySelector(".zl-glow"),
-            blob: el.querySelector(".zl-glow-blob"),
-            active: false,
-            x: 0,
-            y: 0,
-            restX: 0,
-            restY: 0,
-          }))
-          .filter((host) => host.layer && host.blob);
+      // 单一视口光晕：使用鼠标的视口坐标，滚动或跨区块时无需重新定位。
+      const layer = root.querySelector(".zl-glow");
+      if (layer && typeof window.requestAnimationFrame === "function") {
         let frame = 0;
-        const reset = (host) => {
-          host.active = false;
-          host.el.classList.remove("zl-glow-active");
-          host.el.style.removeProperty("--zl-dx");
-          host.el.style.removeProperty("--zl-dy");
-          host.blob.style.transition = "";
-        };
-        const resetAll = () => {
+        let x = 0;
+        let y = 0;
+        const pause = () => {
           if (frame) window.cancelAnimationFrame(frame);
           frame = 0;
-          hosts.forEach(reset);
+          root.classList.remove("zl-glow-active");
         };
-        cleanups.push(resetAll);
-        const place = (host) => {
-          const rect = host.layer.getBoundingClientRect();
-          host.el.style.setProperty("--zl-dx", (host.x - rect.left - host.restX).toFixed(1) + "px");
-          host.el.style.setProperty("--zl-dy", (host.y - rect.top - host.restY).toFixed(1) + "px");
+        const reset = () => {
+          pause();
+          layer.style.removeProperty("--zl-x");
+          layer.style.removeProperty("--zl-y");
         };
-        const schedule = () => {
-          if (frame || !hosts.some((host) => host.active)) return;
+        cleanups.push(reset);
+
+        const onMove = (event) => {
+          if (event.pointerType === "touch" || reduce.matches || !fine.matches) {
+            reset();
+            return;
+          }
+          x = event.clientX;
+          y = event.clientY;
+          if (frame) return;
           frame = window.requestAnimationFrame(() => {
             frame = 0;
             if (reduce.matches || !fine.matches || !root.isConnected) {
-              resetAll();
+              reset();
               return;
             }
-            hosts.forEach((host) => {
-              if (host.active) place(host);
-            });
+            layer.style.setProperty("--zl-x", x + "px");
+            layer.style.setProperty("--zl-y", y + "px");
+            root.classList.add("zl-glow-active");
           });
         };
 
-        hosts.forEach((host) => {
-          const onMove = (event) => {
-            if (event.pointerType === "touch" || reduce.matches || !fine.matches) {
-              reset(host);
-              return;
-            }
-            host.x = event.clientX;
-            host.y = event.clientY;
-            if (!host.active) {
-              host.restX = host.blob.offsetLeft;
-              host.restY = host.blob.offsetTop;
-              host.active = true;
-              if (host.layer.classList.contains("zl-glow-soft")) {
-                host.blob.style.transition = "none";
-                place(host);
-                host.blob.getBoundingClientRect();
-                host.blob.style.transition = "";
-              }
-              host.el.classList.add("zl-glow-active");
-            }
-            schedule();
-          };
-          const onLeave = () => reset(host);
-          host.el.addEventListener("pointermove", onMove, { passive: true });
-          host.el.addEventListener("pointerleave", onLeave);
-          cleanups.push(() => {
-            host.el.removeEventListener("pointermove", onMove);
-            host.el.removeEventListener("pointerleave", onLeave);
-          });
+        // 监听整页，不在 ZWWF Labs、主要项目等区块边界重置光晕。
+        document.addEventListener("pointermove", onMove, { passive: true });
+        document.documentElement.addEventListener("pointerleave", pause);
+        window.addEventListener("blur", pause);
+        cleanups.push(() => {
+          document.removeEventListener("pointermove", onMove);
+          document.documentElement.removeEventListener("pointerleave", pause);
+          window.removeEventListener("blur", pause);
         });
-
-        window.addEventListener("scroll", schedule, { passive: true, capture: true });
-        cleanups.push(() => window.removeEventListener("scroll", schedule, true));
         [reduce, fine].forEach((query) => {
           if (typeof query.addEventListener !== "function") return;
-          query.addEventListener("change", resetAll);
-          cleanups.push(() => query.removeEventListener("change", resetAll));
+          query.addEventListener("change", reset);
+          cleanups.push(() => query.removeEventListener("change", reset));
         });
       }
     } catch (error) {

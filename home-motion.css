@@ -5,48 +5,37 @@
  * 为初始化时仍在首屏下方的元素添加 .zl-pending。
  */
 
-/* ---------- Ambient glow (hero and DigitalLab section) ---------- */
+/* ---------- 首页共用一个光晕，不在区块边界裁切 ---------- */
 
-.zl-home .zl-glow-host {
+.zl-home {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
-}
-
-@supports (overflow: clip) {
-  .zl-home .zl-glow-host {
-    overflow: clip;
-  }
 }
 
 .zl-home .zl-glow {
-  position: absolute;
+  --zl-rest-x: 72vw;
+  --zl-rest-y: 30vh;
+  position: fixed;
   inset: 0;
   z-index: -1;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .zl-home .zl-glow-blob {
   position: absolute;
-  left: 72%;
-  top: 30%;
+  left: 0;
+  top: 0;
   width: 40rem;
   height: 40rem;
   border-radius: 9999px;
   background: radial-gradient(closest-side, rgba(37, 99, 235, 0.13), rgba(37, 99, 235, 0.05) 55%, rgba(37, 99, 235, 0) 100%);
   opacity: 0.6;
-  transform: translate3d(-50%, -50%, 0) translate3d(var(--zl-dx, 0px), var(--zl-dy, 0px), 0);
-  transition: transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
+  transform: translate3d(var(--zl-x, var(--zl-rest-x)), var(--zl-y, var(--zl-rest-y)), 0) translate3d(-50%, -50%, 0);
+  transition: transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
 }
 
-/* Secondary glow: invisible at rest, appears only under a mouse pointer. */
-.zl-home .zl-glow-soft .zl-glow-blob {
-  left: 20%;
-  top: 10%;
-  opacity: 0;
-}
-
-.zl-home .zl-glow-host.zl-glow-active .zl-glow-blob {
+.zl-home.zl-glow-active .zl-glow-blob {
   opacity: 1;
 }
 
@@ -55,9 +44,12 @@ html.dark .zl-home .zl-glow-blob {
 }
 
 @media (max-width: 639px) {
+  .zl-home .zl-glow {
+    --zl-rest-x: 80vw;
+    --zl-rest-y: 22vh;
+  }
+
   .zl-home .zl-glow-blob {
-    left: 80%;
-    top: 22%;
     width: 26rem;
     height: 26rem;
   }
@@ -174,7 +166,7 @@ html.dark .zl-home a:focus-visible {
   }
 
   .zl-home .zl-glow-blob {
-    transform: translate3d(-50%, -50%, 0) !important;
+    transform: translate3d(var(--zl-rest-x), var(--zl-rest-y), 0) translate3d(-50%, -50%, 0) !important;
     transition: none !important;
   }
 
